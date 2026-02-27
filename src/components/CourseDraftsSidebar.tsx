@@ -1,0 +1,147 @@
+import { Plus, Trash2, BookOpen, Users, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { BulkEntryRow } from './BulkEntryGrid'; 
+import { EventData } from './EventDataSection';
+
+export interface CourseDraft {
+  id: string;
+  nombreCurso: string;
+  fechaCreacion: Date;
+  participantes: number;
+  eventData: EventData;
+  employeeData?: any; 
+  bulkRows?: BulkEntryRow[]; 
+  entryMode: 'single' | 'bulk';
+  cedula?: string; 
+  validationStatus?: string;
+}
+
+interface CourseDraftsSidebarProps {
+  drafts: CourseDraft[];
+  selectedDraftId: string | null;
+  onSelectDraft: (id: string) => void;
+  onDeleteDraft: (id: string) => void;
+  onDuplicateDraft: (id: string) => void; // <--- Esta propiedad es vital
+  onNewCourse: () => void;
+}
+
+export function CourseDraftsSidebar({
+  drafts,
+  selectedDraftId,
+  onSelectDraft,
+  onDeleteDraft,
+  onDuplicateDraft, // <--- Recibimos la función
+  onNewCourse,
+}: CourseDraftsSidebarProps) {
+  return (
+    <div className="w-72 bg-white border-r border-border flex flex-col h-full sticky top-0 shadow-sm z-20">
+      <div className="p-4 border-b border-border bg-slate-50">
+        <h3 className="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2">
+            <BookOpen className="w-4 h-4" />
+            Cursos Pre-guardados
+        </h3>
+        <Button
+          onClick={onNewCourse}
+          className="w-full h-9 bg-slate-800 hover:bg-slate-700 text-white"
+          size="sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nuevo Curso (Limpiar)
+        </Button>
+      </div>
+      
+      <ScrollArea className="flex-1 bg-slate-50/50">
+        <div className="p-3 space-y-2">
+          {drafts.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p className="text-sm font-medium text-slate-600">
+                Lista vacía
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Llena un curso y presiona "Pre-guardar" para añadirlo aquí sin descargar el archivo aún.
+              </p>
+            </div>
+          ) : (
+            drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className={cn(
+                  "group relative p-3 rounded-lg cursor-pointer transition-all border shadow-sm",
+                  selectedDraftId === draft.id
+                    ? "bg-white border-primary ring-1 ring-primary"
+                    : "bg-white border-slate-200 hover:border-primary/50 hover:shadow-md"
+                )}
+                onClick={() => onSelectDraft(draft.id)}
+              >
+                <div className="pr-12">
+                  <h4 className="text-sm font-bold text-slate-800 line-clamp-2 leading-tight">
+                    {draft.nombreCurso || 'Curso sin nombre'}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                    <Users className="w-3 h-3" />
+                    <span className="font-medium">{draft.participantes} participante{draft.participantes !== 1 ? 's' : ''}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {format(new Date(draft.fechaCreacion), "dd MMM, HH:mm", { locale: es })}
+                  </p>
+                </div>
+                
+                {/* BOTONES DE ACCIÓN FLOTANTES */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    
+                    {/* BOTÓN DE DUPLICAR */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Evita que se seleccione el curso al duplicar
+                        onDuplicateDraft(draft.id);
+                      }}
+                      title="Duplicar curso"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+
+                    {/* BOTÓN DE ELIMINAR */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteDraft(draft.id);
+                      }}
+                      title="Eliminar curso"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+      
+      {drafts.length > 0 && (
+        <div className="p-4 border-t border-border bg-white">
+          <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
+            <span>Total Cursos:</span>
+            <span className="font-bold">{drafts.length}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs text-slate-500">
+             <span>Total Personas:</span>
+             <span className="font-bold">
+                {drafts.reduce((acc, curr) => acc + curr.participantes, 0)}
+             </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

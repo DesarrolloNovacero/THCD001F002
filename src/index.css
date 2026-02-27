@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 45%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --dropzone-border: 217 91% 60%;
+    --dropzone-bg: 217 91% 97%;
+    --field-disabled-bg: 210 40% 96%;
+    --section-header-bg: 217 91% 97%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 27% 84%;
+
+    --dropzone-border: 217 91% 50%;
+    --dropzone-bg: 217 91% 15%;
+    --field-disabled-bg: 217 33% 17%;
+    --section-header-bg: 217 33% 15%;
+    
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 212 27% 84%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .dropzone {
+    @apply border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer;
+    border-color: hsl(var(--border));
+    background-color: hsl(var(--background));
+  }
+
+  .dropzone:hover,
+  .dropzone-active {
+    border-color: hsl(var(--dropzone-border));
+    background-color: hsl(var(--dropzone-bg));
+  }
+
+  .dropzone-success {
+    border-color: hsl(var(--success));
+    background-color: hsl(142 71% 97%);
+  }
+
+  .section-card {
+    @apply bg-card rounded-xl border shadow-sm;
+  }
+
+  .section-header {
+    @apply px-6 py-4 border-b font-semibold text-foreground flex items-center gap-2;
+    background-color: hsl(var(--section-header-bg));
+  }
+
+  .field-label {
+    @apply text-sm font-medium text-foreground mb-1.5 block;
+  }
+
+  .field-required::after {
+    content: ' *';
+    @apply text-destructive;
+  }
+
+  .validation-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium;
+  }
+
+  .validation-found-headcount {
+    @apply bg-success/10 text-success;
+  }
+
+  .validation-found-cesantes {
+    @apply bg-warning/10 text-warning;
+  }
+
+  .validation-not-found {
+    @apply bg-destructive/10 text-destructive;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
