@@ -3,6 +3,7 @@ import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { BulkEntryRow } from './BulkEntryGrid';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_URL = 'https://thcd001f002-backend.onrender.com';
 
@@ -15,9 +16,10 @@ export function PegadoEntryGrid({ onRowsGenerated, disabled }: PegadoEntryGridPr
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const { token } = useAuth();
 
   const handlePasteProcess = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !token) return;
     setIsProcessing(true);
     
     const rawCedulas = inputText
@@ -38,6 +40,7 @@ export function PegadoEntryGrid({ onRowsGenerated, disabled }: PegadoEntryGridPr
 
         const res = await fetch(`${API_URL}/validate-cedula`, {
             method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
             body: formData
         });
 

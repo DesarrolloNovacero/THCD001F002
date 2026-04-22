@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
 import { Plus, Trash2, Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_URL = 'https://thcd001f002-backend.onrender.com';
 
@@ -23,6 +24,7 @@ function CedulaAutocomplete({ value, onChange, onEnter, disabled, inputRef }: {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isSelecting = useRef(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     let isActive = true;
@@ -34,12 +36,16 @@ function CedulaAutocomplete({ value, onChange, onEnter, disabled, inputRef }: {
     }
     
     const timer = setTimeout(async () => {
-      if (isSelecting.current) return;
+      if (isSelecting.current || !token) return;
       
       try {
         const formData = new FormData();
         formData.append('search_term', value);
-        const res = await fetch(`${API_URL}/suggest-cedulas`, { method: 'POST', body: formData });
+        const res = await fetch(`${API_URL}/suggest-cedulas`, { 
+            method: 'POST', 
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData 
+        });
         
         if (res.ok && isActive) {
           const data = await res.json();
@@ -57,7 +63,7 @@ function CedulaAutocomplete({ value, onChange, onEnter, disabled, inputRef }: {
       isActive = false; 
       clearTimeout(timer); 
     };
-  }, [value]);
+  }, [value, token]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -128,6 +134,7 @@ export function BulkEntryGrid({ rows, onRowsChange, disabled }: {
   rows: BulkEntryRow[]; onRowsChange: Dispatch<SetStateAction<BulkEntryRow[]>>; disabled?: boolean;
 }) {
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const { token } = useAuth();
 
   const addRow = () => {
     const newId = crypto.randomUUID();
@@ -141,7 +148,7 @@ export function BulkEntryGrid({ rows, onRowsChange, disabled }: {
 
   const validateRow = async (row: BulkEntryRow, overrideCedula?: string) => {
     const cedulaToValidate = overrideCedula || row.cedula;
-    if (!cedulaToValidate) return;
+    if (!cedulaToValidate || !token) return;
     
     if (rows.some(r => r.cedula === cedulaToValidate && r.id !== row.id)) {
         updateRow(row.id, { status: 'duplicate', cedula: cedulaToValidate, nombres: 'DUPLICADO', apellidos: '', cargo: 'Esta cédula ya está en la lista' });
@@ -159,7 +166,11 @@ export function BulkEntryGrid({ rows, onRowsChange, disabled }: {
     try {
       const formData = new FormData();
       formData.append('cedulas_json', JSON.stringify([cedulaToValidate]));
-      const res = await fetch(`${API_URL}/validate-cedula`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_URL}/validate-cedula`, { 
+          method: 'POST', 
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData 
+      });
       const [result] = await res.json();
 
       if (result?.found) {
