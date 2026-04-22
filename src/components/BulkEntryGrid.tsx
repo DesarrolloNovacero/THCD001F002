@@ -3,7 +3,7 @@ import { Plus, Trash2, Loader2, CheckCircle, XCircle, AlertTriangle } from 'luci
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const API_URL = 'https://thcd001f002-backend.onrender.com/';
+const API_URL = 'https://thcd001f002-backend.onrender.com';
 
 export type RowValidationStatus = 'idle' | 'loading' | 'found-headcount' | 'found-cesantes' | 'not-found' | 'error' | 'duplicate';
 
