@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { CourseDraftsSidebar, CourseDraft } from '@/components/CourseDraftsSidebar';
 import { SessionsSidebar, Session } from '@/components/SessionsSidebar';
+import { useAuth } from '../contexts/AuthContext';
 
 const INITIAL_EVENT_DATA: EventData = { 
   nombreCurso: '', 
@@ -50,6 +51,7 @@ const API_URL = 'https://thcd001f002-backend.onrender.com';
 
 export default function Index() {
   const { toast } = useToast();
+  const { token, userRole } = useAuth();
   
   const [bulkRows, setBulkRows] = useState<BulkEntryRow[]>([createEmptyBulkRow()]);
   const [eventData, setEventData] = useState<EventData>(INITIAL_EVENT_DATA);
@@ -70,15 +72,20 @@ export default function Index() {
 
   useEffect(() => {
     const initApp = async () => {
+        if (!token) return;
         try {
-            const dbRes = await fetch(`${API_URL}/check-db-status`);
+            const dbRes = await fetch(`${API_URL}/check-db-status`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (dbRes.ok) {
                 const dbData = await dbRes.json();
                 setDbReady(dbData.ready);
                 setDbCount(dbData.count);
             }
 
-            const stateRes = await fetch(`${API_URL}/load-state`);
+            const stateRes = await fetch(`${API_URL}/load-state`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (stateRes.ok) {
                 const stateData = await stateRes.json();
                 if (stateData) {
@@ -93,7 +100,7 @@ export default function Index() {
         }
     };
     initApp();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (currentSessionId && isInitialized) {
@@ -111,7 +118,7 @@ export default function Index() {
   }, [drafts, currentSessionId, isInitialized]);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || !token) return;
 
     const timer = setTimeout(async () => {
         const currentState = {
@@ -128,14 +135,17 @@ export default function Index() {
         try {
             await fetch(`${API_URL}/save-state`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(currentState)
             });
         } catch (e) { console.error(e); }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [eventData, bulkRows, drafts, sessions, currentSessionId, entryMode, isInitialized]);
+  }, [eventData, bulkRows, drafts, sessions, currentSessionId, entryMode, isInitialized, token]);
 
   const handleValidateBulk = async () => {
     if (!dbReady) return toast({ title: 'Base de datos vacía', description: 'Cargue los archivos maestros primero.', variant: 'destructive' });
@@ -148,7 +158,11 @@ export default function Index() {
         const formData = new FormData();
         formData.append('cedulas_json', JSON.stringify(validRows.map(r => r.cedula)));
         
-        const res = await fetch(`${API_URL}/validate-cedula`, { method: 'POST', body: formData });
+        const res = await fetch(`${API_URL}/validate-cedula`, { 
+            method: 'POST', 
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData 
+        });
         if (!res.ok) throw new Error();
         
         const results = await res.json();
@@ -197,17 +211,23 @@ export default function Index() {
       formData.append('source', source);
       
       try {
-          const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', body: formData });
+          const res = await fetch(`${API_URL}/upload-masters`, { 
+              method: 'POST', 
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: formData 
+          });
           if (!res.ok) throw new Error();
           
-          const dbRes = await fetch(`${API_URL}/check-db-status`);
+          const dbRes = await fetch(`${API_URL}/check-db-status`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
           const dbData = await dbRes.json();
           setDbReady(dbData.ready);
           setDbCount(dbData.count);
           
           toast({ title: 'Archivo procesado', description: `Base de datos actualizada con ${source}.` });
       } catch (e) {
-          toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo.', variant: 'destructive' });
+          toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo o sus permisos.', variant: 'destructive' });
       } finally {
           setIsUploading(false);
       }
@@ -397,10 +417,18 @@ export default function Index() {
 
       setIsLoading(true);
       try {
+        const payload = {
+            eventData: eventData,
+            registros: allRegistros
+        };
+
         const response = await fetch(`${API_URL}/export-excel`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(allRegistros),
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) throw new Error();
@@ -415,7 +443,7 @@ export default function Index() {
         a.remove();
         window.URL.revokeObjectURL(url);
         
-        toast({ title: 'Exportación Exitosa', description: 'Se ha descargado el archivo Excel.' });
+        toast({ title: 'Exportación Exitosa', description: 'Se ha descargado el archivo Excel y registrado la trazabilidad.' });
 
       } catch (error) { 
           toast({ title: 'Error', description: 'No se pudo descargar el archivo. Verifique el backend.', variant: 'destructive' }); 
@@ -487,22 +515,24 @@ export default function Index() {
             </div>
           )}
 
-          <div className="section-card">
-             <div className="section-header rounded-t-xl flex justify-between">
-                 <div className="flex gap-2 items-center"><FileUp className="w-5 h-5"/> Base de Datos de Empleados</div>
-                 {dbReady && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">{dbCount} registros activos</span>}
-             </div>
-             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-               {isUploading && (
-                   <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center flex-col">
-                       <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
-                       <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo...</p>
-                   </div>
-               )}
-               <FileDropZone label="Headcount" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'headcount')} disabled={isLoading || isUploading}/>
-               <FileDropZone label="Cesantes" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'cesantes')} disabled={isLoading || isUploading}/>
-             </div>
-          </div>
+          {userRole === 'ADMIN' && (
+            <div className="section-card">
+               <div className="section-header rounded-t-xl flex justify-between">
+                   <div className="flex gap-2 items-center"><FileUp className="w-5 h-5"/> Base de Datos de Empleados (Solo Admin)</div>
+                   {dbReady && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">{dbCount} registros activos</span>}
+               </div>
+               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                 {isUploading && (
+                     <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center flex-col">
+                         <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
+                         <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo...</p>
+                     </div>
+                 )}
+                 <FileDropZone label="Headcount" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'headcount')} disabled={isLoading || isUploading}/>
+                 <FileDropZone label="Cesantes" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'cesantes')} disabled={isLoading || isUploading}/>
+               </div>
+            </div>
+          )}
 
           <div className="section-card">
              <div className="section-header rounded-t-xl justify-between">
@@ -518,7 +548,7 @@ export default function Index() {
                 
                 {!dbReady && (
                     <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 p-2 rounded border border-red-100">
-                        ⚠️ La base de datos está vacía. Cargue archivos maestros para comenzar.
+                        ⚠️ La base de datos está vacía. Contacte al administrador para cargar los archivos maestros.
                     </p>
                 )}
              </div>
