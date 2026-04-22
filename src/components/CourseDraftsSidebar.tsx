@@ -25,7 +25,7 @@ interface CourseDraftsSidebarProps {
   selectedDraftId: string | null;
   onSelectDraft: (id: string) => void;
   onDeleteDraft: (id: string) => void;
-  onDuplicateDraft: (id: string) => void; // <--- Esta propiedad es vital
+  onDuplicateDraft: (id: string) => void;
   onNewCourse: () => void;
 }
 
@@ -34,7 +34,7 @@ export function CourseDraftsSidebar({
   selectedDraftId,
   onSelectDraft,
   onDeleteDraft,
-  onDuplicateDraft, // <--- Recibimos la función
+  onDuplicateDraft,
   onNewCourse,
 }: CourseDraftsSidebarProps) {
   return (
@@ -91,36 +91,33 @@ export function CourseDraftsSidebar({
                   </p>
                 </div>
                 
-                {/* BOTONES DE ACCIÓN FLOTANTES */}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     
-                    {/* BOTÓN DE DUPLICAR */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-blue-400 hover:text-blue-600 hover:bg-blue-50"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Evita que se seleccione el curso al duplicar
-                        onDuplicateDraft(draft.id);
-                      }}
-                      title="Duplicar curso"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicateDraft(draft.id);
+                    }}
+                    title="Duplicar curso"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
 
-                    {/* BOTÓN DE ELIMINAR */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteDraft(draft.id);
-                      }}
-                      title="Eliminar curso"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteDraft(draft.id);
+                    }}
+                    title="Eliminar curso"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               </div>
             ))
