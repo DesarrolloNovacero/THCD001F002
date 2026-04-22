@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { BulkEntryRow } from './BulkEntryGrid';
 
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = 'https://thcd001f002-backend.onrender.com/';
 
 interface PegadoEntryGridProps {
   onRowsGenerated: (rows: BulkEntryRow[]) => void;
