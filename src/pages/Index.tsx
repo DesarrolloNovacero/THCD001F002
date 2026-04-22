@@ -87,7 +87,7 @@ export default function Index() {
                 }
             }
         } catch (e) {
-            console.error("Error conectando con backend:", e);
+            console.error(e);
         } finally {
             setIsInitialized(true);
         }
@@ -131,7 +131,7 @@ export default function Index() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentState)
             });
-        } catch (e) { console.error("Error autoguardando", e); }
+        } catch (e) { console.error(e); }
     }, 2000);
 
     return () => clearTimeout(timer);
@@ -149,7 +149,7 @@ export default function Index() {
         formData.append('cedulas_json', JSON.stringify(validRows.map(r => r.cedula)));
         
         const res = await fetch(`${API_URL}/validate-cedula`, { method: 'POST', body: formData });
-        if (!res.ok) throw new Error("Error en validación");
+        if (!res.ok) throw new Error();
         
         const results = await res.json();
         const resultMap = new Map(results.map((r: any) => [r.cedula, r]));
@@ -350,11 +350,31 @@ export default function Index() {
       let allRegistros: any[] = [];
       
       const formatRow = (row: any, cedula: string, evtData: EventData) => ({
-        nombreCurso: evtData.nombreCurso, objetivo: evtData.objetivo, empresa: evtData.empresa, facilitador: evtData.facilitador, dimensionEvento: evtData.dimensionEvento,
-        lugar: evtData.lugar, modalidad: evtData.modalidad, fechaInicio: evtData.fechaHoraInicio ? format(new Date(evtData.fechaHoraInicio), 'dd/MM/yyyy') : '',
-        fechaCierre: evtData.fechaHoraCierre ? format(new Date(evtData.fechaHoraCierre), 'dd/MM/yyyy') : '', totalHoras: evtData.totalHoras, tipoEvento: evtData.tipoEvento, mesAnio: evtData.mesAnio,
-        cedula: cedula, apellidosNombre: `${row.apellidos} ${row.nombres}`.trim(), genero: row.genero, cargo: row.cargo, unidad: row.unidad, area: row.area,
-        seccion: row.seccion, centroCosto: row.centroCosto, grupoPersonal: row.grupoPersonal, areaPersonal: row.areaPersonal, jefeArea: row.jefeArea, gerenteArea: row.gerenteArea, localidad: row.localidad,
+        "NOMBRE DEL CURSO": evtData.nombreCurso,
+        "OBJETIVO": evtData.objetivo,
+        "EMPRESA CAPACITADORA": evtData.empresa,
+        "FACILITADOR": evtData.facilitador,
+        "DIMENSIÓN DE EVENTO": evtData.dimensionEvento,
+        "LUGAR DONDE SE DIO LA CAPACITACION": evtData.lugar,
+        "MODALIDAD": evtData.modalidad,
+        "FECHA INICIO": evtData.fechaHoraInicio ? format(new Date(evtData.fechaHoraInicio), 'dd/MM/yyyy') : '',
+        "FECHA CIERRE": evtData.fechaHoraCierre ? format(new Date(evtData.fechaHoraCierre), 'dd/MM/yyyy') : '',
+        "DURACION DE LA CAPACITACION (HORAS)": evtData.totalHoras,
+        "TIPO EVENTO": evtData.tipoEvento,
+        "MES-AÑO": evtData.mesAnio,
+        "CÉDULA": cedula,
+        "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim(),
+        "GÉNERO": row.genero,
+        "CARGO": row.cargo,
+        "UNIDAD": row.unidad,
+        "ÁREA": row.area,
+        "SECCIÓN": row.seccion,
+        "CENTRO DE COSTO": row.centroCosto,
+        "GRUPO DE PERSONAL": row.grupoPersonal,
+        "ÁREA DE PERSONAL": row.areaPersonal,
+        "JEFE DE ÁREA": row.jefeArea,
+        "GERENTE DE AREA": row.gerenteArea,
+        "LOCALIDAD": row.localidad,
       });
 
       drafts.forEach(draft => {
@@ -383,7 +403,7 @@ export default function Index() {
           body: JSON.stringify(allRegistros),
         });
 
-        if (!response.ok) throw new Error('Error al generar Excel');
+        if (!response.ok) throw new Error();
 
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
