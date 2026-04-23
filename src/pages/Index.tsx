@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileUp, RotateCcw, History, LibraryBig, FolderOpen, Loader2, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { FileUp, RotateCcw, LibraryBig, FolderOpen, Loader2, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { FileDropZone } from '@/components/FileDropZone';
 import { EventDataSection, EventData } from '@/components/EventDataSection';
@@ -66,7 +66,6 @@ export default function Index() {
   
   const [dbReady, setDbReady] = useState(false);
   const [dbCount, setDbCount] = useState(0);
-  const [savedSessionExists, setSavedSessionExists] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchSync = async () => {
@@ -80,7 +79,9 @@ export default function Index() {
               setDrafts(prev => prev.map(d => {
                   if (d.eventoId) {
                       const match = dbEvents.find((e: any) => e.id === d.eventoId);
-                      if (match) return { ...d, estado: match.estado, comentario: match.comentario };
+                      if (match && (d.estado !== match.estado || d.comentario !== match.comentario)) {
+                          return { ...d, estado: match.estado, comentario: match.comentario };
+                      }
                   }
                   return d;
               }));
@@ -89,7 +90,9 @@ export default function Index() {
                   drafts: s.drafts.map(d => {
                       if (d.eventoId) {
                           const match = dbEvents.find((e: any) => e.id === d.eventoId);
-                          if (match) return { ...d, estado: match.estado, comentario: match.comentario };
+                          if (match && (d.estado !== match.estado || d.comentario !== match.comentario)) {
+                              return { ...d, estado: match.estado, comentario: match.comentario };
+                          }
                       }
                       return d;
                   })
@@ -110,10 +113,19 @@ export default function Index() {
             }
             const stateRes = await fetch(`${API_URL}/load-state`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (stateRes.ok) {
-                const stateData = await stateRes.json();
-                if (stateData) {
-                    setSavedSessionExists(true);
-                    localStorage.setItem('temp-restore-point', JSON.stringify(stateData));
+                const data = await stateRes.json();
+                if (data) {
+                    if (data.drafts) setDrafts(data.drafts);
+                    if (data.sessions) setSessions(data.sessions);
+                    if (data.eventData) {
+                        setEventData({
+                            ...data.eventData,
+                            fechaHoraInicio: data.eventData.fechaHoraInicio ? new Date(data.eventData.fechaHoraInicio) : undefined,
+                            fechaHoraCierre: data.eventData.fechaHoraCierre ? new Date(data.eventData.fechaHoraCierre) : undefined
+                        });
+                    }
+                    if (data.bulkRows) setBulkRows(data.bulkRows);
+                    if (data.currentSessionId) setCurrentSessionId(data.currentSessionId);
                 }
             }
         } catch (e) {
@@ -127,7 +139,7 @@ export default function Index() {
   useEffect(() => {
       if (isInitialized && token) {
           fetchSync();
-          const interval = setInterval(fetchSync, 15000);
+          const interval = setInterval(fetchSync, 10000);
           return () => clearInterval(interval);
       }
   }, [isInitialized, token]);
@@ -220,29 +232,6 @@ export default function Index() {
       }
   };
 
-  const handleRestore = () => {
-      const saved = localStorage.getItem('temp-restore-point');
-      if (saved) {
-          try {
-            const data = JSON.parse(saved);
-            if (data.drafts) setDrafts(data.drafts);
-            if (data.sessions) setSessions(data.sessions);
-            if (data.eventData) {
-                setEventData({
-                    ...data.eventData,
-                    fechaHoraInicio: data.eventData.fechaHoraInicio ? new Date(data.eventData.fechaHoraInicio) : undefined,
-                    fechaHoraCierre: data.eventData.fechaHoraCierre ? new Date(data.eventData.fechaHoraCierre) : undefined
-                });
-            }
-            if (data.bulkRows) setBulkRows(data.bulkRows);
-            setSavedSessionExists(false);
-            toast({ title: 'Datos restaurados exitosamente' });
-          } catch(e) {
-              toast({ title: 'Error', description: 'No se pudieron restaurar los datos.', variant: 'destructive' });
-          }
-      }
-  };
-
   const handleNewCourse = () => {
     setIsLoading(false);
     setEventData(INITIAL_EVENT_DATA); 
@@ -297,32 +286,31 @@ export default function Index() {
           const newSession: Session = { id: crypto.randomUUID(), nombre, fechaCreacion: new Date(), fechaModificacion: new Date(), drafts: [...drafts] };
           setSessions(prev => [...prev, newSession]);
           setCurrentSessionId(newSession.id);
-          toast({ title: 'Sesión creada', description: `Trabajando en: ${nombre}` });
+          toast({ title: 'Bitácora creada', description: `Trabajando en: ${nombre}` });
       } finally { setIsLoading(false); }
   };
 
   const handleLoadSession = (session: Session) => {
-      if (drafts.length > 0 && !confirm("¿Cargar esta sesión reemplazará tu trabajo actual no guardado. Continuar?")) return;
       setIsLoading(true);
       try {
           setDrafts(session.drafts);
           setCurrentSessionId(session.id);
           setSidebarView('drafts');
           handleNewCourse(); 
-          toast({ title: 'Sesión cargada' });
+          toast({ title: 'Bitácora cargada' });
       } finally { setIsLoading(false); }
   };
 
   const handleDeleteSession = (id: string) => {
-      if (!confirm("¿Eliminar sesión permanentemente?")) return;
+      if (!confirm("¿Eliminar bitácora permanentemente?")) return;
       setSessions(prev => prev.filter(s => s.id !== id));
       if (currentSessionId === id) setCurrentSessionId(null);
-      toast({ title: 'Sesión eliminada' });
+      toast({ title: 'Bitácora eliminada' });
   };
 
   const handleManualSessionUpdate = () => {
       setIsLoading(false);
-      toast({ title: 'Sesión guardada y actualizada' });
+      toast({ title: 'Bitácora actualizada' });
   };
 
   const handleEnviarRevision = async () => {
@@ -383,7 +371,7 @@ export default function Index() {
                     onClick={() => { setSidebarView('sessions'); setIsLoading(false); }} 
                     className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all ${sidebarView === 'sessions' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                    <FolderOpen className="w-3.5 h-3.5" /> Sesiones
+                    <FolderOpen className="w-3.5 h-3.5" /> Bitácoras
                 </button>
             </div>
         </div>
@@ -399,22 +387,6 @@ export default function Index() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <AppHeader />
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          
-          {savedSessionExists && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-2">
-               <div className="flex gap-3 items-center text-amber-800">
-                   <History className="w-5 h-5"/> 
-                   <div>
-                       <p className="font-bold text-sm">Sesión Anterior Encontrada</p>
-                       <p className="text-xs">¿Deseas restaurar tu trabajo previo?</p>
-                   </div>
-               </div>
-               <div className="flex gap-2">
-                   <Button variant="ghost" size="sm" onClick={() => setSavedSessionExists(false)} className="text-amber-800">No</Button>
-                   <Button variant="outline" size="sm" onClick={handleRestore} className="bg-white border-amber-300 text-amber-900">Sí, Restaurar</Button>
-               </div>
-            </div>
-          )}
 
           {isLocked && (
             <div className={`p-4 rounded-lg flex items-center gap-3 ${currentDraft.estado === 'APROBADO' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>

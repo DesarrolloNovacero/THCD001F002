@@ -51,13 +51,13 @@ export function SessionsSidebar({
       <div className="p-4 border-b border-border bg-slate-50">
         <h3 className="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2">
            <FolderOpen className="w-4 h-4" />
-           Sesiones Guardadas
+           Bitácoras Mensuales
         </h3>
         
         {isCreating ? (
           <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
             <Input
-              placeholder="Nombre de la sesión..."
+              placeholder="Ej: Marzo 2026..."
               value={newSessionName}
               onChange={(e) => setNewSessionName(e.target.value)}
               onKeyDown={(e) => {
@@ -79,12 +79,12 @@ export function SessionsSidebar({
         ) : (
           <div className="space-y-2">
             <Button onClick={() => setIsCreating(true)} disabled={currentDrafts.length === 0} className="w-full h-9 bg-slate-800 text-white hover:bg-slate-700" size="sm">
-              <Save className="w-4 h-4 mr-2" /> Nueva Sesión
+              <Save className="w-4 h-4 mr-2" /> Guardar Bitácora
             </Button>
             
             {currentSessionId && (
               <Button variant="outline" onClick={onUpdateSession} className="w-full h-9 border-green-600 text-green-700 hover:bg-green-50" size="sm">
-                <Save className="w-4 h-4 mr-2" /> Actualizar Actual
+                <Save className="w-4 h-4 mr-2" /> Actualizar Bitácora
               </Button>
             )}
           </div>
@@ -96,7 +96,7 @@ export function SessionsSidebar({
           {sessions.length === 0 ? (
             <div className="text-center py-10 px-4 text-slate-400">
               <FolderOpen className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No hay sesiones</p>
+              <p className="text-sm">No hay bitácoras guardadas</p>
             </div>
           ) : (
             sessions.map((session) => (
@@ -113,7 +113,7 @@ export function SessionsSidebar({
                 <div className="pr-8">
                   <h4 className="text-sm font-bold text-slate-800 truncate">{session.nombre}</h4>
                   <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-                    <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {session.drafts.length}</span>
+                    <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {session.drafts.length} cursos</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(new Date(session.fechaModificacion), "HH:mm", { locale: es })}</span>
                   </div>
                 </div>
