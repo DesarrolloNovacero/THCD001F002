@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileUp, RotateCcw, History, LibraryBig, FolderOpen, Loader2, Send } from 'lucide-react';
+import { FileUp, RotateCcw, History, LibraryBig, FolderOpen, Loader2, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { FileDropZone } from '@/components/FileDropZone';
 import { EventDataSection, EventData } from '@/components/EventDataSection';
@@ -8,7 +8,6 @@ import { PegadoEntryGrid } from '@/components/PegadoEntryGrid';
 import { EntryModeToggle, EntryMode } from '@/components/EntryModeToggle';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 import { CourseDraftsSidebar, CourseDraft } from '@/components/CourseDraftsSidebar';
 import { SessionsSidebar, Session } from '@/components/SessionsSidebar';
 import { useAuth } from '../contexts/AuthContext';
@@ -70,22 +69,46 @@ export default function Index() {
   const [savedSessionExists, setSavedSessionExists] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  const fetchSync = async () => {
+      if (!token) return;
+      try {
+          const res = await fetch(`${API_URL}/mis-eventos`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+              const dbEvents = await res.json();
+              setDrafts(prev => prev.map(d => {
+                  if (d.eventoId) {
+                      const match = dbEvents.find((e: any) => e.id === d.eventoId);
+                      if (match) return { ...d, estado: match.estado, comentario: match.comentario };
+                  }
+                  return d;
+              }));
+              setSessions(prev => prev.map(s => ({
+                  ...s,
+                  drafts: s.drafts.map(d => {
+                      if (d.eventoId) {
+                          const match = dbEvents.find((e: any) => e.id === d.eventoId);
+                          if (match) return { ...d, estado: match.estado, comentario: match.comentario };
+                      }
+                      return d;
+                  })
+              })));
+          }
+      } catch(e) {}
+  };
+
   useEffect(() => {
     const initApp = async () => {
         if (!token) return;
         try {
-            const dbRes = await fetch(`${API_URL}/check-db-status`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const dbRes = await fetch(`${API_URL}/check-db-status`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (dbRes.ok) {
                 const dbData = await dbRes.json();
                 setDbReady(dbData.ready);
                 setDbCount(dbData.count);
             }
-
-            const stateRes = await fetch(`${API_URL}/load-state`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const stateRes = await fetch(`${API_URL}/load-state`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (stateRes.ok) {
                 const stateData = await stateRes.json();
                 if (stateData) {
@@ -94,7 +117,6 @@ export default function Index() {
                 }
             }
         } catch (e) {
-            console.error(e);
         } finally {
             setIsInitialized(true);
         }
@@ -103,14 +125,18 @@ export default function Index() {
   }, [token]);
 
   useEffect(() => {
+      if (isInitialized && token) {
+          fetchSync();
+          const interval = setInterval(fetchSync, 15000);
+          return () => clearInterval(interval);
+      }
+  }, [isInitialized, token]);
+
+  useEffect(() => {
     if (currentSessionId && isInitialized) {
         setSessions(prevSessions => prevSessions.map(session => {
             if (session.id === currentSessionId) {
-                return {
-                    ...session,
-                    drafts: [...drafts],
-                    fechaModificacion: new Date()
-                };
+                return { ...session, drafts: [...drafts], fechaModificacion: new Date() };
             }
             return session;
         }));
@@ -119,37 +145,25 @@ export default function Index() {
 
   useEffect(() => {
     if (!isInitialized || !token) return;
-
     const timer = setTimeout(async () => {
-        const currentState = {
-            entryMode, 
-            cedula: '',
-            validationStatus: 'idle',
-            employeeData: {}, 
-            eventData, 
-            bulkRows, 
-            drafts, 
-            sessions, 
-            currentSessionId
-        };
+        const currentState = { entryMode, cedula: '', validationStatus: 'idle', employeeData: {}, eventData, bulkRows, drafts, sessions, currentSessionId };
         try {
             await fetch(`${API_URL}/save-state`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(currentState)
             });
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     }, 2000);
-
     return () => clearTimeout(timer);
   }, [eventData, bulkRows, drafts, sessions, currentSessionId, entryMode, isInitialized, token]);
 
+  const currentDraft = drafts.find(d => d.id === selectedDraftId);
+  const isLocked = currentDraft?.estado === 'PENDIENTE' || currentDraft?.estado === 'APROBADO';
+  const isFormDisabled = isLoading || isLocked;
+
   const handleValidateBulk = async () => {
     if (!dbReady) return toast({ title: 'Base de datos vacía', description: 'Contacte al administrador.', variant: 'destructive' });
-    
     const validRows = bulkRows.filter(r => r.cedula.trim().length > 0);
     if (validRows.length === 0) return;
     
@@ -157,32 +171,16 @@ export default function Index() {
     try {
         const formData = new FormData();
         formData.append('cedulas_json', JSON.stringify(validRows.map(r => r.cedula)));
-        
-        const res = await fetch(`${API_URL}/validate-cedula`, { 
-            method: 'POST', 
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData 
-        });
+        const res = await fetch(`${API_URL}/validate-cedula`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
         if (!res.ok) throw new Error();
         
         const results = await res.json();
         const resultMap = new Map(results.map((r: any) => [r.cedula, r]));
-        
         setBulkRows(prev => prev.map(row => {
             const res = resultMap.get(row.cedula);
             if (!res) return row;
-            
             return res.found 
-                ? { 
-                    ...row, 
-                    status: (res.source === 'headcount' ? 'found-headcount' : 'found-cesantes'), 
-                    ...res.data,
-                    centroCosto: res.data.centro_costo,
-                    grupoPersonal: res.data.grupo_personal,
-                    areaPersonal: res.data.area_personal,
-                    jefeArea: res.data.jefe_area,
-                    gerenteArea: res.data.gerente_area
-                }
+                ? { ...row, status: (res.source === 'headcount' ? 'found-headcount' : 'found-cesantes'), ...res.data, centroCosto: res.data.centro_costo, grupoPersonal: res.data.grupo_personal, areaPersonal: res.data.area_personal, jefeArea: res.data.jefe_area, gerenteArea: res.data.gerente_area }
                 : { ...row, status: 'not-found', nombres: '', apellidos: '', cargo: '' };
         }));
         toast({ title: 'Validación completada' });
@@ -195,9 +193,7 @@ export default function Index() {
 
   const handlePastedRows = (newRows: BulkEntryRow[]) => {
       setBulkRows(prev => {
-          if (prev.length === 1 && !prev[0].cedula) {
-              return [...newRows, createEmptyBulkRow()];
-          }
+          if (prev.length === 1 && !prev[0].cedula) return [...newRows, createEmptyBulkRow()];
           return [...prev, ...newRows, createEmptyBulkRow()];
       });
       setEntryMode('bulk'); 
@@ -209,25 +205,16 @@ export default function Index() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('source', source);
-      
       try {
-          const res = await fetch(`${API_URL}/upload-masters`, { 
-              method: 'POST', 
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: formData 
-          });
+          const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
           if (!res.ok) throw new Error();
-          
-          const dbRes = await fetch(`${API_URL}/check-db-status`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-          });
+          const dbRes = await fetch(`${API_URL}/check-db-status`, { headers: { 'Authorization': `Bearer ${token}` } });
           const dbData = await dbRes.json();
           setDbReady(dbData.ready);
           setDbCount(dbData.count);
-          
           toast({ title: 'Archivo procesado', description: `Base de datos actualizada con ${source}.` });
       } catch (e) {
-          toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo o sus permisos.', variant: 'destructive' });
+          toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo.', variant: 'destructive' });
       } finally {
           setIsUploading(false);
       }
@@ -240,7 +227,6 @@ export default function Index() {
             const data = JSON.parse(saved);
             if (data.drafts) setDrafts(data.drafts);
             if (data.sessions) setSessions(data.sessions);
-            
             if (data.eventData) {
                 setEventData({
                     ...data.eventData,
@@ -249,7 +235,6 @@ export default function Index() {
                 });
             }
             if (data.bulkRows) setBulkRows(data.bulkRows);
-            
             setSavedSessionExists(false);
             toast({ title: 'Datos restaurados exitosamente' });
           } catch(e) {
@@ -267,12 +252,10 @@ export default function Index() {
 
   const handlePreSave = () => {
     const validRows = bulkRows.filter(r => r.status.includes('found'));
-    
     if (validRows.length === 0 || !eventData.nombreCurso) {
         toast({ title: 'Datos incompletos', description: 'Ingrese un tema y valide al menos un participante.', variant: 'destructive' });
         return;
     }
-
     const newDraft: CourseDraft = {
         id: selectedDraftId || crypto.randomUUID(), 
         nombreCurso: eventData.nombreCurso,
@@ -280,14 +263,14 @@ export default function Index() {
         participantes: validRows.length,
         eventData: { ...eventData }, 
         entryMode: 'bulk', 
-        bulkRows: [...bulkRows] 
+        bulkRows: [...bulkRows],
+        estado: currentDraft?.estado === 'RECHAZADO' ? 'BORRADOR' : currentDraft?.estado,
+        eventoId: currentDraft?.eventoId
     };
-
     setDrafts(prev => { 
         const idx = prev.findIndex(d => d.id === newDraft.id); 
         return idx >= 0 ? prev.map((d, i) => i === idx ? newDraft : d) : [...prev, newDraft]; 
     });
-    
     toast({ title: selectedDraftId ? 'Curso Actualizado' : 'Curso Pre-guardado' });
     if (!selectedDraftId) handleNewCourse();
   };
@@ -297,46 +280,25 @@ export default function Index() {
     if(d) { 
         setSelectedDraftId(id); 
         setEventData(d.eventData); 
-        if (d.entryMode === 'single' && d.cedula) {
-             const newRow = createEmptyBulkRow();
-             newRow.cedula = d.cedula;
-             setBulkRows([newRow]);
-        } else {
-             setBulkRows(d.bulkRows || [createEmptyBulkRow()]); 
-        }
+        setBulkRows(d.bulkRows || [createEmptyBulkRow()]); 
     }
   };
 
   const handleDuplicateDraft = (id: string) => {
     const draft = drafts.find(d => d.id === id);
     if (!draft) return;
-    
-    const newDraft = {
-        ...draft,
-        id: crypto.randomUUID(),
-        nombreCurso: `${draft.nombreCurso} (Copia)`,
-        fechaCreacion: new Date()
-    };
-    
+    const newDraft = { ...draft, id: crypto.randomUUID(), nombreCurso: `${draft.nombreCurso} (Copia)`, fechaCreacion: new Date(), estado: 'BORRADOR' as any, eventoId: undefined, comentario: '' };
     setDrafts(prev => [...prev, newDraft]);
     toast({ title: 'Curso duplicado' });
   };
 
   const handleSaveNewSession = (nombre: string) => {
       try {
-          const newSession: Session = {
-              id: crypto.randomUUID(),
-              nombre,
-              fechaCreacion: new Date(),
-              fechaModificacion: new Date(),
-              drafts: [...drafts]
-          };
+          const newSession: Session = { id: crypto.randomUUID(), nombre, fechaCreacion: new Date(), fechaModificacion: new Date(), drafts: [...drafts] };
           setSessions(prev => [...prev, newSession]);
           setCurrentSessionId(newSession.id);
           toast({ title: 'Sesión creada', description: `Trabajando en: ${nombre}` });
-      } finally {
-          setIsLoading(false);
-      }
+      } finally { setIsLoading(false); }
   };
 
   const handleLoadSession = (session: Session) => {
@@ -348,9 +310,7 @@ export default function Index() {
           setSidebarView('drafts');
           handleNewCourse(); 
           toast({ title: 'Sesión cargada' });
-      } finally {
-          setIsLoading(false);
-      }
+      } finally { setIsLoading(false); }
   };
 
   const handleDeleteSession = (id: string) => {
@@ -367,56 +327,40 @@ export default function Index() {
 
   const handleEnviarRevision = async () => {
       let allRegistros: any[] = [];
-      
-      const formatRow = (row: any, cedula: string, evtData: EventData) => ({
-        "CÉDULA": cedula,
-        "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim(),
-      });
+      const formatRow = (row: any, cedula: string) => ({ "CÉDULA": cedula, "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim() });
 
-      if (selectedDraftId === null) {
-           bulkRows.filter(r => r.status.includes('found')).forEach(row => {
-               allRegistros.push(formatRow(row, row.cedula, eventData));
-           });
-      } else {
-           const draft = drafts.find(d => d.id === selectedDraftId);
-           if (draft && draft.bulkRows) {
-               draft.bulkRows.filter(r => r.status.includes('found')).forEach(row => {
-                   allRegistros.push(formatRow(row, row.cedula, draft.eventData));
-               });
-           }
-      }
+      bulkRows.filter(r => r.status.includes('found')).forEach(row => {
+          allRegistros.push(formatRow(row, row.cedula));
+      });
 
       if (allRegistros.length === 0) {
           return toast({ title: 'Datos incompletos', description: 'Valide al menos un colaborador antes de enviar.', variant: 'destructive' });
       }
 
+      let draftIdToUpdate = selectedDraftId;
+      let targetDraft = drafts.find(d => d.id === selectedDraftId);
+      
+      if (!draftIdToUpdate || !targetDraft) {
+          draftIdToUpdate = crypto.randomUUID();
+          targetDraft = { id: draftIdToUpdate, nombreCurso: eventData.nombreCurso, fechaCreacion: new Date(), participantes: allRegistros.length, eventData: { ...eventData }, entryMode: 'bulk', bulkRows: [...bulkRows] };
+          setDrafts(prev => [...prev, targetDraft!]);
+          setSelectedDraftId(draftIdToUpdate);
+      }
+
       setIsLoading(true);
       try {
-        const payload = {
-            eventData: eventData,
-            registros: allRegistros,
-            eventoId: null
-        };
-
+        const payload = { eventData: eventData, registros: allRegistros, eventoId: targetDraft.eventoId || null };
         const response = await fetch(`${API_URL}/enviar-revision`, {
           method: 'POST',
-          headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload),
         });
 
         if (!response.ok) throw new Error();
+        const resData = await response.json();
 
+        setDrafts(prev => prev.map(d => d.id === draftIdToUpdate ? { ...d, eventoId: resData.evento_id, estado: 'PENDIENTE', comentario: '' } : d));
         toast({ title: '¡Enviado a Revisión!', description: 'El administrador auditará los datos pronto.' });
-        
-        if (selectedDraftId) {
-            setDrafts(prev => prev.filter(d => d.id !== selectedDraftId));
-        }
-        
-        handleNewCourse();
-
       } catch (error) { 
           toast({ title: 'Error', description: 'No se pudo enviar al servidor.', variant: 'destructive' }); 
       } finally { 
@@ -445,24 +389,9 @@ export default function Index() {
         </div>
         <div className="flex-1 overflow-hidden">
             {sidebarView === 'drafts' ? (
-                <CourseDraftsSidebar 
-                    drafts={drafts} 
-                    selectedDraftId={selectedDraftId} 
-                    onSelectDraft={handleSelectDraft} 
-                    onDeleteDraft={(id) => setDrafts(p => p.filter(x => x.id !== id))} 
-                    onDuplicateDraft={handleDuplicateDraft} 
-                    onNewCourse={handleNewCourse} 
-                />
+                <CourseDraftsSidebar drafts={drafts} selectedDraftId={selectedDraftId} onSelectDraft={handleSelectDraft} onDeleteDraft={(id) => setDrafts(p => p.filter(x => x.id !== id))} onDuplicateDraft={handleDuplicateDraft} onNewCourse={handleNewCourse} />
             ) : (
-                <SessionsSidebar 
-                    sessions={sessions} 
-                    currentSessionId={currentSessionId} 
-                    currentDrafts={drafts} 
-                    onSaveSession={handleSaveNewSession} 
-                    onLoadSession={handleLoadSession} 
-                    onDeleteSession={handleDeleteSession} 
-                    onUpdateSession={handleManualSessionUpdate} 
-                />
+                <SessionsSidebar sessions={sessions} currentSessionId={currentSessionId} currentDrafts={drafts} onSaveSession={handleSaveNewSession} onLoadSession={handleLoadSession} onDeleteSession={handleDeleteSession} onUpdateSession={handleManualSessionUpdate} />
             )}
         </div>
       </div>
@@ -487,6 +416,27 @@ export default function Index() {
             </div>
           )}
 
+          {isLocked && (
+            <div className={`p-4 rounded-lg flex items-center gap-3 ${currentDraft.estado === 'APROBADO' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
+                {currentDraft.estado === 'APROBADO' ? <CheckCircle className="w-6 h-6"/> : <Clock className="w-6 h-6"/>}
+                <div>
+                    <p className="font-bold">Este curso está {currentDraft.estado}</p>
+                    <p className="text-sm">No puedes editar los datos mientras se encuentre en este estado.</p>
+                </div>
+            </div>
+          )}
+
+          {currentDraft?.estado === 'RECHAZADO' && (
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-red-50 border border-red-200 text-red-800">
+                <XCircle className="w-6 h-6 shrink-0"/>
+                <div>
+                    <p className="font-bold">Curso Rechazado</p>
+                    <p className="text-sm font-medium italic">"{currentDraft.comentario}"</p>
+                    <p className="text-xs mt-2">Corrige los datos y vuelve a enviarlo a revisión.</p>
+                </div>
+            </div>
+          )}
+
           {userRole === 'ADMIN' && (
             <div className="section-card">
                <div className="section-header rounded-t-xl flex justify-between">
@@ -500,8 +450,8 @@ export default function Index() {
                          <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo...</p>
                      </div>
                  )}
-                 <FileDropZone label="Headcount" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'headcount')} disabled={isLoading || isUploading}/>
-                 <FileDropZone label="Cesantes" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'cesantes')} disabled={isLoading || isUploading}/>
+                 <FileDropZone label="Headcount" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'headcount')} disabled={isFormDisabled || isUploading}/>
+                 <FileDropZone label="Cesantes" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'cesantes')} disabled={isFormDisabled || isUploading}/>
                </div>
             </div>
           )}
@@ -513,9 +463,9 @@ export default function Index() {
              </div>
              <div className="p-6">
                 {entryMode === 'paste' ? (
-                    <PegadoEntryGrid onRowsGenerated={handlePastedRows} disabled={!dbReady || isLoading} />
+                    <PegadoEntryGrid onRowsGenerated={handlePastedRows} disabled={!dbReady || isFormDisabled} />
                 ) : (
-                    <BulkEntryGrid rows={bulkRows} onRowsChange={setBulkRows} onValidateAll={handleValidateBulk} disabled={!dbReady || isLoading} />
+                    <BulkEntryGrid rows={bulkRows} onRowsChange={setBulkRows} onValidateAll={handleValidateBulk} disabled={!dbReady || isFormDisabled} />
                 )}
                 
                 {!dbReady && (
@@ -526,20 +476,16 @@ export default function Index() {
              </div>
           </div>
 
-          <EventDataSection 
-            data={eventData} 
-            onChange={(f, v) => setEventData(p => ({...p, [f]: v}))} 
-            disabled={isLoading}
-          />
+          <EventDataSection data={eventData} onChange={(f, v) => setEventData(p => ({...p, [f]: v}))} disabled={isFormDisabled} />
 
           <div className="flex justify-end gap-3 pb-10 pt-4">
              <Button variant="outline" onClick={handleNewCourse} disabled={isLoading}>
                  <RotateCcw className="w-4 h-4 mr-2"/> Limpiar
              </Button>
-             <Button variant="default" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handlePreSave} disabled={isLoading}>
-                 <LibraryBig className="w-4 h-4 mr-2"/> {selectedDraftId ? "Actualizar" : "Pre-guardar"}
+             <Button variant="default" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handlePreSave} disabled={isFormDisabled}>
+                 <LibraryBig className="w-4 h-4 mr-2"/> {selectedDraftId ? "Actualizar Local" : "Pre-guardar"}
              </Button>
-             <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20" onClick={handleEnviarRevision} disabled={isLoading}>
+             <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20" onClick={handleEnviarRevision} disabled={isFormDisabled}>
                  <Send className="w-4 h-4 mr-2"/> Enviar a Revisión
              </Button>
           </div>

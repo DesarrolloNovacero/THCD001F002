@@ -1,4 +1,4 @@
-import { Plus, Trash2, BookOpen, Users, Copy } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Users, Copy, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,9 @@ export interface CourseDraft {
   entryMode: 'single' | 'bulk';
   cedula?: string; 
   validationStatus?: string;
+  eventoId?: string;
+  estado?: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'BORRADOR';
+  comentario?: string;
 }
 
 interface CourseDraftsSidebarProps {
@@ -63,7 +66,7 @@ export function CourseDraftsSidebar({
                 Lista vacía
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Llena un curso y presiona "Pre-guardar" para añadirlo aquí sin descargar el archivo aún.
+                Llena un curso y presiona "Pre-guardar" para añadirlo aquí.
               </p>
             </div>
           ) : (
@@ -74,25 +77,41 @@ export function CourseDraftsSidebar({
                   "group relative p-3 rounded-lg cursor-pointer transition-all border shadow-sm",
                   selectedDraftId === draft.id
                     ? "bg-white border-primary ring-1 ring-primary"
-                    : "bg-white border-slate-200 hover:border-primary/50 hover:shadow-md"
+                    : "bg-white border-slate-200 hover:border-primary/50 hover:shadow-md",
+                  draft.estado === 'RECHAZADO' && "border-red-300 bg-red-50/30"
                 )}
                 onClick={() => onSelectDraft(draft.id)}
               >
                 <div className="pr-12">
-                  <h4 className="text-sm font-bold text-slate-800 line-clamp-2 leading-tight">
-                    {draft.nombreCurso || 'Curso sin nombre'}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                  <div className="flex items-start justify-between mb-1">
+                    <h4 className="text-sm font-bold text-slate-800 line-clamp-2 leading-tight">
+                      {draft.nombreCurso || 'Curso sin nombre'}
+                    </h4>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {(!draft.estado || draft.estado === 'BORRADOR') && <span className="text-slate-500 font-bold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">Borrador</span>}
+                    {draft.estado === 'PENDIENTE' && <span className="flex items-center text-amber-600 font-bold text-[10px] bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200"><Clock className="w-3 h-3 mr-1"/>Pendiente</span>}
+                    {draft.estado === 'APROBADO' && <span className="flex items-center text-emerald-600 font-bold text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200"><CheckCircle2 className="w-3 h-3 mr-1"/>Aprobado</span>}
+                    {draft.estado === 'RECHAZADO' && <span className="flex items-center text-red-600 font-bold text-[10px] bg-red-100 px-1.5 py-0.5 rounded border border-red-200"><AlertCircle className="w-3 h-3 mr-1"/>Rechazado</span>}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
                     <Users className="w-3 h-3" />
                     <span className="font-medium">{draft.participantes} participante{draft.participantes !== 1 ? 's' : ''}</span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
                     {format(new Date(draft.fechaCreacion), "dd MMM, HH:mm", { locale: es })}
                   </p>
+
+                  {draft.estado === 'RECHAZADO' && draft.comentario && (
+                    <div className="mt-2 text-[10px] bg-red-100 text-red-800 p-1.5 rounded border border-red-200 leading-tight">
+                      <strong>Motivo:</strong> {draft.comentario}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    
                   <Button
                     variant="ghost"
                     size="icon"
