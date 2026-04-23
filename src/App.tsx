@@ -6,14 +6,15 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Componente Guardián
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { token } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin }: { children: React.ReactNode, requireAdmin?: boolean }) => {
+  const { token, userRole } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
+  if (requireAdmin && userRole !== 'ADMIN') return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -26,6 +27,11 @@ const App = () => (
         <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin>
+                <Admin />
+              </ProtectedRoute>
+            } />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />

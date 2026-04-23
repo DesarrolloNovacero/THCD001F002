@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileUp, Save, RotateCcw, History, LibraryBig, FolderOpen, Loader2 } from 'lucide-react';
+import { FileUp, RotateCcw, History, LibraryBig, FolderOpen, Loader2, Send } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { FileDropZone } from '@/components/FileDropZone';
 import { EventDataSection, EventData } from '@/components/EventDataSection';
@@ -148,7 +148,7 @@ export default function Index() {
   }, [eventData, bulkRows, drafts, sessions, currentSessionId, entryMode, isInitialized, token]);
 
   const handleValidateBulk = async () => {
-    if (!dbReady) return toast({ title: 'Base de datos vacía', description: 'Cargue los archivos maestros primero.', variant: 'destructive' });
+    if (!dbReady) return toast({ title: 'Base de datos vacía', description: 'Contacte al administrador.', variant: 'destructive' });
     
     const validRows = bulkRows.filter(r => r.cedula.trim().length > 0);
     if (validRows.length === 0) return;
@@ -263,7 +263,6 @@ export default function Index() {
     setEventData(INITIAL_EVENT_DATA); 
     setBulkRows([createEmptyBulkRow()]); 
     setSelectedDraftId(null);
-    toast({ title: 'Formulario limpiado' });
   };
 
   const handlePreSave = () => {
@@ -366,63 +365,40 @@ export default function Index() {
       toast({ title: 'Sesión guardada y actualizada' });
   };
 
-  const handleSaveFinal = async () => {
+  const handleEnviarRevision = async () => {
       let allRegistros: any[] = [];
       
       const formatRow = (row: any, cedula: string, evtData: EventData) => ({
-        "NOMBRE DEL CURSO": evtData.nombreCurso,
-        "OBJETIVO": evtData.objetivo,
-        "EMPRESA CAPACITADORA": evtData.empresa,
-        "FACILITADOR": evtData.facilitador,
-        "DIMENSIÓN DE EVENTO": evtData.dimensionEvento,
-        "LUGAR DONDE SE DIO LA CAPACITACION": evtData.lugar,
-        "MODALIDAD": evtData.modalidad,
-        "FECHA INICIO": evtData.fechaHoraInicio ? format(new Date(evtData.fechaHoraInicio), 'dd/MM/yyyy') : '',
-        "FECHA CIERRE": evtData.fechaHoraCierre ? format(new Date(evtData.fechaHoraCierre), 'dd/MM/yyyy') : '',
-        "DURACION DE LA CAPACITACION (HORAS)": evtData.totalHoras,
-        "TIPO EVENTO": evtData.tipoEvento,
-        "MES-AÑO": evtData.mesAnio,
         "CÉDULA": cedula,
         "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim(),
-        "GÉNERO": row.genero,
-        "CARGO": row.cargo,
-        "UNIDAD": row.unidad,
-        "ÁREA": row.area,
-        "SECCIÓN": row.seccion,
-        "CENTRO DE COSTO": row.centroCosto,
-        "GRUPO DE PERSONAL": row.grupoPersonal,
-        "ÁREA DE PERSONAL": row.areaPersonal,
-        "JEFE DE ÁREA": row.jefeArea,
-        "GERENTE DE AREA": row.gerenteArea,
-        "LOCALIDAD": row.localidad,
-      });
-
-      drafts.forEach(draft => {
-          if (draft.bulkRows) {
-              draft.bulkRows.filter(r => r.status.includes('found')).forEach(row => {
-                  allRegistros.push(formatRow(row, row.cedula, draft.eventData));
-              });
-          }
       });
 
       if (selectedDraftId === null) {
            bulkRows.filter(r => r.status.includes('found')).forEach(row => {
                allRegistros.push(formatRow(row, row.cedula, eventData));
            });
+      } else {
+           const draft = drafts.find(d => d.id === selectedDraftId);
+           if (draft && draft.bulkRows) {
+               draft.bulkRows.filter(r => r.status.includes('found')).forEach(row => {
+                   allRegistros.push(formatRow(row, row.cedula, draft.eventData));
+               });
+           }
       }
 
       if (allRegistros.length === 0) {
-          return toast({ title: 'Nada que exportar', description: 'No hay registros válidos en la lista.', variant: 'destructive' });
+          return toast({ title: 'Datos incompletos', description: 'Valide al menos un colaborador antes de enviar.', variant: 'destructive' });
       }
 
       setIsLoading(true);
       try {
         const payload = {
             eventData: eventData,
-            registros: allRegistros
+            registros: allRegistros,
+            eventoId: null
         };
 
-        const response = await fetch(`${API_URL}/export-excel`, {
+        const response = await fetch(`${API_URL}/enviar-revision`, {
           method: 'POST',
           headers: { 
               'Content-Type': 'application/json',
@@ -433,20 +409,16 @@ export default function Index() {
 
         if (!response.ok) throw new Error();
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `capacitacion_consolidado_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+        toast({ title: '¡Enviado a Revisión!', description: 'El administrador auditará los datos pronto.' });
         
-        toast({ title: 'Exportación Exitosa', description: 'Se ha descargado el archivo Excel y registrado la trazabilidad.' });
+        if (selectedDraftId) {
+            setDrafts(prev => prev.filter(d => d.id !== selectedDraftId));
+        }
+        
+        handleNewCourse();
 
       } catch (error) { 
-          toast({ title: 'Error', description: 'No se pudo descargar el archivo. Verifique el backend.', variant: 'destructive' }); 
+          toast({ title: 'Error', description: 'No se pudo enviar al servidor.', variant: 'destructive' }); 
       } finally { 
           setIsLoading(false); 
       }
@@ -567,8 +539,8 @@ export default function Index() {
              <Button variant="default" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handlePreSave} disabled={isLoading}>
                  <LibraryBig className="w-4 h-4 mr-2"/> {selectedDraftId ? "Actualizar" : "Pre-guardar"}
              </Button>
-             <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveFinal} disabled={drafts.length === 0 || isLoading}>
-                 <Save className="w-4 h-4 mr-2"/> Exportar Excel
+             <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20" onClick={handleEnviarRevision} disabled={isLoading}>
+                 <Send className="w-4 h-4 mr-2"/> Enviar a Revisión
              </Button>
           </div>
         </main>
