@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, LogOut, Shield, Users, UserPlus, X, Loader2, Power, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { GraduationCap, LogOut, Shield, Users, UserPlus, X, Loader2, Power, Trash2, CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +17,7 @@ interface UserItem {
 export function AppHeader() {
   const { userName, userRole, token, logout } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'lista' | 'nuevo'>('lista');
@@ -124,7 +126,7 @@ export function AppHeader() {
     <>
       <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-primary-foreground" />
             </div>
@@ -138,9 +140,14 @@ export function AppHeader() {
             <div className="flex items-center gap-4">
               
               {userRole === 'ADMIN' && (
-                <Button variant="outline" size="sm" onClick={() => setShowAdminModal(true)} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                  <Users className="w-4 h-4 mr-2" /> Panel de Usuarios
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/admin')} className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                    <ClipboardCheck className="w-4 h-4 mr-2" /> Auditoría
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowAdminModal(true)} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                    <Users className="w-4 h-4 mr-2" /> Panel de Usuarios
+                  </Button>
+                </>
               )}
 
               <div className="text-right hidden sm:block border-l pl-4">
