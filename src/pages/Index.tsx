@@ -442,7 +442,7 @@ export default function Index() {
                 
                 {!dbReady && (
                     <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 p-2 rounded border border-red-100">
-                        ⚠️ La base de datos está vacía. Contacte al administrador para cargar los archivos maestros.
+                        La base de datos está vacía. Contacte al administrador para cargar los archivos maestros.
                     </p>
                 )}
              </div>

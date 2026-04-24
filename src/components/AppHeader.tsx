@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, LogOut, Shield, Users, UserPlus, X, Loader2, Power, Trash2, CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
+import { GraduationCap, LogOut, Shield, Users, UserPlus, X, Loader2, Power, Trash2, CheckCircle2, XCircle, ClipboardCheck, Key } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,9 @@ export function AppHeader() {
   
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'lista' | 'nuevo'>('lista');
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
@@ -119,6 +122,30 @@ export function AppHeader() {
       fetchUsers();
     } catch (error: any) {
       toast({ title: 'Atención', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+        const res = await fetch(`https://thcd001f002-backend.onrender.com/usuarios/${selectedUserId}/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ password: newPassword })
+        });
+        if (!res.ok) throw new Error('Error al cambiar contraseña');
+        toast({ title: 'Contraseña actualizada' });
+        setPasswordModalOpen(false);
+        setNewPassword('');
+        setSelectedUserId(null);
+    } catch (error: any) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -262,6 +289,16 @@ export function AppHeader() {
                           </div>
                           
                           <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setSelectedUserId(u.id); setPasswordModalOpen(true); }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                              title="Cambiar Contraseña"
+                            >
+                              <Key className="w-4 h-4"/>
+                            </Button>
+
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -287,6 +324,28 @@ export function AppHeader() {
                 </ScrollArea>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {passwordModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-blue-600"/> Cambiar Contraseña</h3>
+            <form onSubmit={handleChangePassword}>
+              <input
+                type="password"
+                required minLength={6}
+                placeholder="Nueva contraseña..."
+                className="w-full border rounded-lg p-3 text-sm mb-4"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => { setPasswordModalOpen(false); setNewPassword(''); }}>Cancelar</Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={!newPassword.trim() || isLoading}>Guardar</Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
