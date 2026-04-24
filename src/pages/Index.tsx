@@ -212,11 +212,11 @@ export default function Index() {
       toast({ title: 'Datos importados', description: `Se añadieron ${newRows.length} registros a la tabla.` });
   };
 
-  const handleFileUpload = async (file: File, source: 'headcount' | 'cesantes') => {
+  const handleFileUpload = async (file: File) => {
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('source', source);
+      formData.append('source', 'maestro');
       try {
           const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
           if (!res.ok) throw new Error();
@@ -224,7 +224,7 @@ export default function Index() {
           const dbData = await dbRes.json();
           setDbReady(dbData.ready);
           setDbCount(dbData.count);
-          toast({ title: 'Archivo procesado', description: `Base de datos actualizada con ${source}.` });
+          toast({ title: 'Archivo procesado', description: `Base de datos unificada actualizada.` });
       } catch (e) {
           toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo.', variant: 'destructive' });
       } finally {
@@ -415,15 +415,14 @@ export default function Index() {
                    <div className="flex gap-2 items-center"><FileUp className="w-5 h-5"/> Base de Datos de Empleados (Solo Admin)</div>
                    {dbReady && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">{dbCount} registros activos</span>}
                </div>
-               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+               <div className="p-6 relative">
                  {isUploading && (
                      <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center flex-col">
                          <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
                          <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo...</p>
                      </div>
                  )}
-                 <FileDropZone label="Headcount" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'headcount')} disabled={isFormDisabled || isUploading}/>
-                 <FileDropZone label="Cesantes" fileName={null} onFileSelect={(f) => handleFileUpload(f, 'cesantes')} disabled={isFormDisabled || isUploading}/>
+                 <FileDropZone label="Maestro Único de Colaboradores" fileName={null} onFileSelect={(f) => handleFileUpload(f)} disabled={isFormDisabled || isUploading}/>
                </div>
             </div>
           )}
