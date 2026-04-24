@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileUp, RotateCcw, LibraryBig, FolderOpen, Loader2, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { FileUp, RotateCcw, LibraryBig, FolderOpen, Loader2, Send, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { FileDropZone } from '@/components/FileDropZone';
 import { EventDataSection, EventData } from '@/components/EventDataSection';
@@ -8,6 +8,7 @@ import { PegadoEntryGrid } from '@/components/PegadoEntryGrid';
 import { EntryModeToggle, EntryMode } from '@/components/EntryModeToggle';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 import { CourseDraftsSidebar, CourseDraft } from '@/components/CourseDraftsSidebar';
 import { SessionsSidebar, Session } from '@/components/SessionsSidebar';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,6 +64,7 @@ export default function Index() {
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [sidebarView, setSidebarView] = useState<'drafts' | 'sessions'>('drafts');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [mesCorte, setMesCorte] = useState<string>('');
   
   const [dbReady, setDbReady] = useState(false);
   const [dbCount, setDbCount] = useState(0);
@@ -213,10 +215,15 @@ export default function Index() {
   };
 
   const handleFileUpload = async (file: File) => {
+      if(!mesCorte) {
+          return toast({ title: 'Falta el Mes de Corte', description: 'Selecciona un mes para crear el Snapshot de métricas antes de subir el archivo.', variant: 'destructive' });
+      }
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('source', 'maestro');
+      formData.append('mes_corte', mesCorte);
+      
       try {
           const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
           if (!res.ok) throw new Error();
@@ -224,7 +231,7 @@ export default function Index() {
           const dbData = await dbRes.json();
           setDbReady(dbData.ready);
           setDbCount(dbData.count);
-          toast({ title: 'Archivo procesado', description: `Base de datos unificada actualizada.` });
+          toast({ title: 'Archivo procesado', description: `Base de datos unificada y métricas de ${mesCorte} guardadas.` });
       } catch (e) {
           toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo.', variant: 'destructive' });
       } finally {
@@ -412,17 +419,25 @@ export default function Index() {
           {userRole === 'ADMIN' && (
             <div className="section-card">
                <div className="section-header rounded-t-xl flex justify-between">
-                   <div className="flex gap-2 items-center"><FileUp className="w-5 h-5"/> Base de Datos de Empleados (Solo Admin)</div>
+                   <div className="flex gap-2 items-center"><FileUp className="w-5 h-5"/> Carga de Datos Maestros (Solo Admin)</div>
                    {dbReady && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">{dbCount} registros activos</span>}
                </div>
                <div className="p-6 relative">
                  {isUploading && (
                      <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center flex-col">
                          <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
-                         <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo...</p>
+                         <p className="text-sm font-semibold mt-2 text-blue-700">Procesando archivo y calculando métricas...</p>
                      </div>
                  )}
-                 <FileDropZone label="Maestro Único de Colaboradores" fileName={null} onFileSelect={(f) => handleFileUpload(f)} disabled={isFormDisabled || isUploading}/>
+                 <div className="mb-4">
+                     <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2"><CalendarDays className="w-4 h-4"/> 1. Selecciona el Mes de Corte (Snapshot de Activos)</label>
+                     <Input type="month" value={mesCorte} onChange={e => setMesCorte(e.target.value)} className="w-64" disabled={isFormDisabled || isUploading} />
+                     <p className="text-xs text-slate-500 mt-1">Este mes se usará como denominador para calcular el KPI de Personal Capacitado.</p>
+                 </div>
+                 <div className="mt-6 border-t pt-4">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">2. Arrastra el Maestro de Empleados</label>
+                    <FileDropZone label="Maestro Único (Activos y Cesantes)" fileName={null} onFileSelect={(f) => handleFileUpload(f)} disabled={isFormDisabled || isUploading || !mesCorte}/>
+                 </div>
                </div>
             </div>
           )}
