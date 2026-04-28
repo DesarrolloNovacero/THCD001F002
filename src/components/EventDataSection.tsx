@@ -20,8 +20,8 @@ export interface EventData {
   dimensionEvento: string;
   lugar: string;
   modalidad: string;
-  fechaHoraInicio: Date | undefined;
-  fechaHoraCierre: Date | undefined;
+  fechaHoraInicio: any; 
+  fechaHoraCierre: any;
   totalHoras: string;
   tipoEvento: string;
   mesAnio: string;
@@ -53,17 +53,26 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
     }
   }, [token]);
 
+  const getValidDate = (val: any) => {
+      if (!val) return undefined;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d;
+  };
+
+  const dateInicio = getValidDate(data.fechaHoraInicio);
+  const dateCierre = getValidDate(data.fechaHoraCierre);
+
   const handleDateTimeChange = (field: 'fechaHoraInicio' | 'fechaHoraCierre', date: Date | undefined) => {
     if (!date) {
       onChange(field, undefined);
       return;
     }
-    const currentValue = data[field];
-    const hours = currentValue ? currentValue.getHours() : 0;
-    const minutes = currentValue ? currentValue.getMinutes() : 0;
+    const currentObj = field === 'fechaHoraInicio' ? dateInicio : dateCierre;
+    const hours = currentObj ? currentObj.getHours() : 0;
+    const minutes = currentObj ? currentObj.getMinutes() : 0;
     const newDate = new Date(date);
     newDate.setHours(hours, minutes, 0, 0);
-    onChange(field, newDate);
+    onChange(field, newDate.toISOString()); 
   };
 
   return (
@@ -78,7 +87,7 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <Label className="field-label text-blue-800 mb-2">Asignación Especial de Sede (Exclusivo Guayaquil)</Label>
             <RadioGroup
-              value={data.localidadCurso}
+              value={data.localidadCurso || 'Guayaquil'}
               onValueChange={(value) => onChange('localidadCurso', value)}
               disabled={disabled}
               className="flex gap-6 mt-2"
@@ -148,13 +157,13 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
             <Label className="field-label field-required">Fecha Inicio</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" disabled={disabled} className={cn("w-full h-10 justify-start text-left font-normal", !data.fechaHoraInicio && "text-muted-foreground border-red-500 shadow-sm shadow-red-200")}>
+                <Button variant="outline" disabled={disabled} className={cn("w-full h-10 justify-start text-left font-normal", !dateInicio && "text-muted-foreground border-red-500 shadow-sm shadow-red-200")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {data.fechaHoraInicio ? format(data.fechaHoraInicio, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
+                  {dateInicio ? format(dateInicio, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-popover" align="start">
-                <Calendar mode="single" selected={data.fechaHoraInicio} onSelect={(date) => handleDateTimeChange('fechaHoraInicio', date)} initialFocus className="pointer-events-auto" />
+                <Calendar mode="single" selected={dateInicio} onSelect={(date) => handleDateTimeChange('fechaHoraInicio', date)} initialFocus className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
@@ -163,13 +172,13 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
             <Label className="field-label field-required">Fecha Cierre</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" disabled={disabled} className={cn("w-full h-10 justify-start text-left font-normal", !data.fechaHoraCierre && "text-muted-foreground border-red-500 shadow-sm shadow-red-200")}>
+                <Button variant="outline" disabled={disabled} className={cn("w-full h-10 justify-start text-left font-normal", !dateCierre && "text-muted-foreground border-red-500 shadow-sm shadow-red-200")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {data.fechaHoraCierre ? format(data.fechaHoraCierre, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
+                  {dateCierre ? format(dateCierre, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-popover" align="start">
-                <Calendar mode="single" selected={data.fechaHoraCierre} onSelect={(date) => handleDateTimeChange('fechaHoraCierre', date)} initialFocus className="pointer-events-auto" />
+                <Calendar mode="single" selected={dateCierre} onSelect={(date) => handleDateTimeChange('fechaHoraCierre', date)} initialFocus className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
