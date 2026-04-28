@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, CheckCircle, XCircle, Download, Clock, MessageSquareX, LayoutDashboard, ClipboardCheck, Users, Calendar } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Download, Clock, MessageSquareX, LayoutDashboard, ClipboardCheck, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface EventoAdmin {
@@ -16,7 +16,59 @@ interface EventoAdmin {
   fecha: string;
 }
 
-const COLORS = ['#003f5c', '#ffc107', '#4b4b4b', '#009688', '#2196f3', '#f44336', '#9c27b0'];
+const COLORS = ['#004D7C', '#FDD900', '#4E4B4A', '#0067A2', '#0092C0', '#F2A900'];
+
+const TrendIndicator = ({ valor, isPercentage, title }: { valor: number, isPercentage: boolean, title: string }) => {
+    let color = "#FFC000";
+    let arrow = "●";
+    let subtitle = "Sin variación";
+    
+    if (valor > 0) { 
+        color = "#00B050"; 
+        arrow = "▲"; 
+        subtitle = "Crecimiento vs mes anterior"; 
+    } 
+    else if (valor < 0) { 
+        color = "#FF0000"; 
+        arrow = "▼"; 
+        subtitle = "Decrecimiento vs mes anterior"; 
+    }
+
+    const formattedVal = isPercentage ? `${Math.abs(valor).toFixed(2)}%` : Math.abs(valor).toLocaleString();
+
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center h-full">
+            <div className="text-[clamp(0.9rem,1.2vw,1.1rem)] text-[#666] mb-2">{title}</div>
+            <div className="flex items-center gap-[0.4em] text-[clamp(1.4rem,3vw,2rem)] font-bold" style={{ color }}>
+                {formattedVal} <span>{arrow}</span>
+            </div>
+            <div className="text-[clamp(1rem,1vw,1rem)] mt-2" style={{ color }}>{subtitle}</div>
+        </div>
+    );
+};
+
+const CustomGenderLegend = (props: any) => {
+    const { payload } = props;
+    return (
+        <ul className="list-none p-0 m-0 space-y-3 flex flex-col justify-center items-start">
+            {payload.map((entry: any, index: number) => {
+                const isFemale = entry.value.includes('FEMENINO');
+                return (
+                    <li key={`item-${index}`} className="flex items-center text-sm font-bold text-slate-700">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill={entry.color} className="mr-2">
+                            {isFemale ? (
+                                <path d="M12 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-4.5 8.5C6.12 12.5 5 13.62 5 15v2h2v4h3v-4h4v4h3v-4h2v-2c0-1.38-1.12-2.5-2.5-2.5h-9z" />
+                            ) : (
+                                <path d="M12 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-3.5 8h7c1.38 0 2.5 1.12 2.5 2.5v5h-3v4h-4v-4H6v-5c0-1.38 1.12-2.5 2.5-2.5z" />
+                            )}
+                        </svg>
+                        {entry.value}
+                    </li>
+                );
+            })}
+        </ul>
+    );
+};
 
 export default function Admin() {
   const { token } = useAuth();
@@ -176,129 +228,114 @@ export default function Admin() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center">
-                    <p className="text-4xl font-black text-slate-800">{dashboardData.kpis.total_colaboradores}</p>
+                    <p className="text-4xl font-black text-[#004D7C]">{dashboardData.kpis.total_colaboradores}</p>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Colaboradores</p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center">
-                    <p className="text-4xl font-black text-slate-800">{dashboardData.kpis.total_horas}</p>
+                    <p className="text-4xl font-black text-[#004D7C]">{dashboardData.kpis.total_horas}</p>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Horas</p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center">
-                    <p className="text-4xl font-black text-slate-800">{dashboardData.kpis.horas_promedio}</p>
+                    <p className="text-4xl font-black text-[#004D7C]">{dashboardData.kpis.horas_promedio}</p>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Horas Promedio</p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center">
-                    <p className="text-4xl font-black text-slate-800">{dashboardData.kpis.total_cursos}</p>
+                    <p className="text-4xl font-black text-[#004D7C]">{dashboardData.kpis.total_cursos}</p>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Cursos</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <h3 className="font-bold text-slate-700 mb-4">Modalidad de los Cursos por Horas</h3>
-                    <div className="h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={dashboardData.graficos.modalidad} innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
-                            {dashboardData.graficos.modalidad.map((_: any, index: number) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} Horas`} />
-                          <Legend verticalAlign="middle" align="right" layout="vertical" />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="font-bold text-slate-700 mb-4">Horas Por Género</h3>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={dashboardData.graficos.genero} innerRadius={50} outerRadius={80} dataKey="value">
-                            {dashboardData.graficos.genero.map((entry: any, index: number) => (
-                              <Cell key={`cell-${index}`} fill={entry.name.includes('FEMENINO') ? '#ffc107' : '#003f5c'} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} Horas`} />
-                          <Legend verticalAlign="middle" align="right" layout="vertical" />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="font-bold text-slate-700 mb-4">Dimensión de Evento por Grupo de Personal (Horas)</h3>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={dashboardData.graficos.dimension_grupo} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="dimension" tick={{fontSize: 10}} interval={0} />
-                          <YAxis tick={{fontSize: 10}} />
-                          <Tooltip />
-                          <Legend wrapperStyle={{fontSize: '10px'}} />
-                          {gruposUnicos.map((grp, idx) => (
-                            <Bar key={grp} dataKey={grp} stackId="a" fill={COLORS[idx % COLORS.length]} />
-                          ))}
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
                   <div className="space-y-4">
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[300px] flex flex-col">
-                      <h3 className="font-bold text-slate-700 mb-4">Horas por Unidad de Negocio</h3>
-                      <div className="flex-1">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={dashboardData.graficos.unidad_negocio} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{fontSize: 8}} angle={-45} textAnchor="end" interval={0} />
-                            <YAxis tick={{fontSize: 10}} />
-                            <Tooltip />
-                            <Bar dataKey="value" fill="#003f5c" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                      <TrendIndicator valor={dashboardData.tendencias?.diferencia_horas || 0} isPercentage={false} title="Diferencia de Horas de Capacitación" />
+                      <TrendIndicator valor={dashboardData.tendencias?.diferencia_pct || 0} isPercentage={true} title="Diferencia de % Colaboradores Capacitados" />
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[300px]">
+                    <h3 className="font-bold text-slate-700 mb-4">Modalidad de los Cursos por Horas</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={dashboardData.graficos.modalidad} innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
+                          {dashboardData.graficos.modalidad.map((_: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value} Horas`} />
+                        <Legend verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{fontSize: '12px', fontWeight: 'bold'}} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
 
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[300px]">
+                    <h3 className="font-bold text-slate-700 mb-4">Horas Por Género</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={dashboardData.graficos.genero} innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
+                          {dashboardData.graficos.genero.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={entry.name.includes('FEMENINO') ? '#FDD900' : '#004D7C'} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value} Horas`} />
+                        <Legend content={<CustomGenderLegend />} verticalAlign="middle" align="right" layout="vertical" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[250px]">
-                    <h3 className="font-bold text-slate-700 mb-4">Horas por Localidad</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[350px]">
+                    <h3 className="font-bold text-slate-700 mb-4">Dimensión de Evento por Grupo de Personal (Horas)</h3>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dashboardData.graficos.localidad} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" tick={{fontSize: 10}} />
-                        <YAxis dataKey="name" type="category" tick={{fontSize: 10}} width={80} />
+                      <BarChart data={dashboardData.graficos.dimension_grupo} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="dimension" tick={{fontSize: 9}} interval={0} angle={-30} textAnchor="end" />
+                        <YAxis tick={{fontSize: 10}} />
                         <Tooltip />
-                        <Bar dataKey="value" fill="#ffc107" />
+                        <Legend wrapperStyle={{fontSize: '9px', marginTop: '10px'}} />
+                        {gruposUnicos.map((grp, idx) => (
+                          <Bar key={grp} dataKey={grp} stackId="a" fill={COLORS[idx % COLORS.length]} />
+                        ))}
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden">
-                    <h3 className="font-bold text-slate-700 mb-4 absolute top-4 left-4">Personal Capacitado</h3>
-                    <div className="w-48 h-24 relative mt-8">
-                      <div className="absolute inset-0 border-[24px] border-slate-100 rounded-t-full border-b-0"></div>
-                      <div 
-                        className="absolute inset-0 border-[24px] border-[#ffc107] rounded-t-full border-b-0 origin-bottom transition-transform duration-1000 ease-out"
-                        style={{ transform: `rotate(${((dashboardData.kpis.personal_capacitado_pct / 100) * 180) - 180}deg)` }}
-                      ></div>
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-4 bg-white px-4">
-                        <p className="text-3xl font-black text-slate-800">{dashboardData.kpis.personal_capacitado_pct}%</p>
-                      </div>
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[350px]">
+                    <h3 className="font-bold text-slate-700 mb-4">Horas por Unidad de Negocio</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dashboardData.graficos.unidad_negocio} margin={{ top: 20, right: 0, left: -20, bottom: 60 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" tick={{fontSize: 9}} angle={-45} textAnchor="end" interval={0} />
+                        <YAxis tick={{fontSize: 10}} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#004D7C" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[200px]">
+                        <h3 className="font-bold text-slate-700 mb-4">Horas por Localidad</h3>
+                        <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={dashboardData.graficos.localidad} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                            <XAxis type="number" tick={{fontSize: 10}} />
+                            <YAxis dataKey="name" type="category" tick={{fontSize: 10}} width={80} />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#FDD900" />
+                        </BarChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="flex justify-between w-full mt-8 px-12 text-xs font-bold text-slate-400">
-                      <span>0.00%</span>
-                      <span>100.00%</span>
+
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden h-[134px]">
+                        <h3 className="font-bold text-slate-700 absolute top-2 left-4 z-10 bg-white/80 pr-2">Personal Capacitado</h3>
+                        <div className="w-40 h-20 relative mt-6">
+                        <div className="absolute inset-0 border-[20px] border-slate-100 rounded-t-full border-b-0"></div>
+                        <div className="absolute inset-0 border-[20px] border-[#FDD900] rounded-t-full border-b-0 origin-bottom transition-transform duration-1000 ease-out" style={{ transform: `rotate(${((dashboardData.kpis.personal_capacitado_pct / 100) * 180) - 180}deg)` }}></div>
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-3 bg-white px-2">
+                            <p className="text-2xl font-black text-slate-800">{dashboardData.kpis.personal_capacitado_pct}%</p>
+                        </div>
+                        </div>
+                        <div className="flex justify-between w-full mt-5 px-12 text-[10px] font-bold text-slate-400"><span>0%</span><span>100%</span></div>
                     </div>
                   </div>
                 </div>
