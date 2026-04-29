@@ -37,7 +37,7 @@ interface EventDataSectionProps {
 const OBJETIVOS = ['Capacitar', 'Difundir', 'Socializar', 'Desarrollo de competencias', 'Actualización técnica', 'Inducción', 'Certificación', 'Seguridad y salud'];
 const DIMENSIONES = ['Seguridad y Salud Ocupacional', 'Calidad', 'Ambiente', 'Energia', 'Estrategica', 'Tecnica', 'Desarrollo', 'Liderazgo', 'Otros'];
 const TIPOS_EVENTO = ['Charla', 'Curso/Taller', 'Entrenamiento Formativo', 'Induccion', 'Informacion (Reunion)'];
-const LUGAR = ['Novacero Guayaquil', 'Novacero Quito', 'Novacero Lasso', 'Novacero Austro', 'Virtual', 'Externa'];
+const LUGAR = ['Guayaquil', 'Quito', 'Lasso', 'Austro'];
 const FACILITADORES = ['Otro Facilitador'];
 
 export function EventDataSection({ data, onChange, disabled }: EventDataSectionProps) {
