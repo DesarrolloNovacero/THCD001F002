@@ -7,7 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Loader2, CheckCircle, XCircle, Download, Clock, MessageSquareX, 
   LayoutDashboard, ClipboardCheck, FileSpreadsheet, 
-  TrendingUp, TrendingDown, Minus, Calendar, ChevronLeft, ChevronRight
+  TrendingUp, TrendingDown, Minus, Calendar, ChevronLeft, ChevronRight,
+  Undo2 // Importado para la función de revertir
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -239,6 +240,23 @@ export default function Admin() {
     } catch (e) {}
   };
 
+  // NUEVA FUNCIÓN: Revertir a Pendiente
+  const handleRevertir = async (id: string) => {
+    if (!confirm('¿Seguro que deseas revertir la aprobación? El curso volverá a estar pendiente.')) return;
+    try {
+      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/revertir`, { 
+        method: 'PUT', 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      if (res.ok) {
+        toast({ title: 'Aprobación revertida', description: 'El curso ahora aparece como Pendiente.' });
+        fetchEventos();
+      }
+    } catch (e) {
+      toast({ title: 'Error al revertir', variant: 'destructive' });
+    }
+  };
+
   const handleExportarAuditoria = async (id: string, codigo: string) => {
     try {
       const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/exportar`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -253,7 +271,6 @@ export default function Admin() {
     return [...datos].sort((a, b) => b.value - a.value);
   };
 
-  // REFORZADO: Ahora limpia "PLANTA" y "OFICINA" (insensible a mayúsculas/minúsculas)
   const cleanLabel = (name: string) => {
     return name.replace(/(planta|oficina)\s+/gi, '').trim().toUpperCase();
   };
@@ -511,6 +528,12 @@ export default function Admin() {
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleExportarAuditoria(e.id, e.codigo)} className="text-slate-600 hover:text-[#004D7C] hover:bg-slate-100 h-8 w-8 p-0"><Download className="w-4 h-4" /></Button>
+                        
+                        {/* NUEVO BOTÓN: REVERTIR APROBACIÓN */}
+                        {e.estado === 'APROBADO' && (
+                          <Button variant="outline" size="sm" onClick={() => handleRevertir(e.id)} className="text-amber-600 border-amber-200 hover:bg-amber-50 h-8 w-8 p-0" title="Revertir a Pendiente"><Undo2 className="w-4 h-4" /></Button>
+                        )}
+
                         {e.estado === 'PENDIENTE' && ( <><Button variant="outline" size="sm" onClick={() => handleAprobar(e.id)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 h-8 w-8 p-0"><CheckCircle className="w-4 h-4" /></Button><Button variant="outline" size="sm" onClick={() => setRechazoId(e.id)} className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-8 p-0"><XCircle className="w-4 h-4" /></Button></> )}
                       </td>
                     </tr>
