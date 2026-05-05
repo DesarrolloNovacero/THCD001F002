@@ -253,6 +253,20 @@ export default function Admin() {
     return [...datos].sort((a, b) => b.value - a.value);
   };
 
+  const cleanLabel = (name: string) => {
+    return name.replace(/planta\s+/i, '').trim();
+  };
+
+  const fusionarYLimpiarDatos = (datos: any[]) => {
+    if (!datos) return [];
+    const merged: Record<string, number> = {};
+    datos.forEach(item => {
+      const cleanName = cleanLabel(item.name);
+      merged[cleanName] = (merged[cleanName] || 0) + item.value;
+    });
+    return Object.entries(merged).map(([name, value]) => ({ name, value }));
+  };
+
   const procesarDimension100 = useMemo(() => {
     if (!dashboardData?.graficos?.dimension_grupo) return { data: [], llaves: [] };
     const datos = dashboardData.graficos.dimension_grupo;
@@ -272,10 +286,10 @@ export default function Admin() {
     return { data: datos100, llaves: Array.from(llavesUnicas) };
   }, [dashboardData]);
 
-  const datosModalidad = procesarDatosOrdenados(dashboardData?.graficos?.modalidad);
-  const datosGenero = procesarDatosOrdenados(dashboardData?.graficos?.genero);
-  const datosUnidad = procesarDatosOrdenados(dashboardData?.graficos?.unidad_negocio);
-  const datosLocalidad = procesarDatosOrdenados(dashboardData?.graficos?.localidad);
+  const datosModalidad = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.modalidad));
+  const datosGenero = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.genero));
+  const datosUnidad = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.unidad_negocio));
+  const datosLocalidad = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.localidad));
 
   const renderCalendar = () => (
     <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl p-4 z-50 w-64">
