@@ -184,15 +184,36 @@ export default function Index() {
   const handlePreSave = () => {
     const validRows = bulkRows.filter(r => r.status.includes('found'));
     if (validRows.length === 0 || !eventData.nombreCurso) return toast({ title: 'Datos incompletos', description: 'Ingrese un tema y valide al menos un participante.', variant: 'destructive' });
-    const newDraft: CourseDraft = { id: selectedDraftId || crypto.randomUUID(), nombreCurso: eventData.nombreCurso, fechaCreacion: new Date(), participantes: validRows.length, eventData: { ...eventData }, entryMode: 'bulk', bulkRows: [...bulkRows], estado: currentDraft?.estado === 'RECHAZADO' ? 'BORRADOR' : currentDraft?.estado, eventoId: currentDraft?.eventoId };
-    setDrafts(prev => { const idx = prev.findIndex(d => d.id === newDraft.id); return idx >= 0 ? prev.map((d, i) => i === idx ? newDraft : d) : [...prev, newDraft]; });
-    toast({ title: selectedDraftId ? 'Curso Actualizado' : 'Curso Pre-guardado' });
+    
+    // PERSISTENCIA DEL ID: Mantenemos el ID seleccionado si existe
+    const newDraft: CourseDraft = { 
+        id: selectedDraftId || crypto.randomUUID(), 
+        nombreCurso: eventData.nombreCurso, 
+        fechaCreacion: new Date(), 
+        participantes: validRows.length, 
+        eventData: { ...eventData }, 
+        entryMode: 'bulk', 
+        bulkRows: [...bulkRows], 
+        estado: currentDraft?.estado === 'RECHAZADO' ? 'BORRADOR' : (currentDraft?.estado || 'BORRADOR'), 
+        eventoId: currentDraft?.eventoId 
+    };
+
+    setDrafts(prev => { 
+        const idx = prev.findIndex(d => d.id === newDraft.id); 
+        return idx >= 0 ? prev.map((d, i) => i === idx ? newDraft : d) : [...prev, newDraft]; 
+    });
+
+    toast({ title: selectedDraftId ? 'Curso Actualizado Localmente' : 'Curso Pre-guardado' });
     if (!selectedDraftId) handleNewCourse();
   };
 
   const handleSelectDraft = (id: string) => {
     const d = drafts.find(x => x.id === id);
-    if(d) { setSelectedDraftId(id); setEventData(d.eventData); setBulkRows(d.bulkRows || [createEmptyBulkRow()]); }
+    if(d) { 
+        setSelectedDraftId(id); 
+        setEventData(d.eventData); 
+        setBulkRows(d.bulkRows || [createEmptyBulkRow()]); 
+    }
   };
 
   const handleDuplicateDraft = (id: string) => {
@@ -233,31 +254,55 @@ export default function Index() {
   const handleManualSessionUpdate = () => { setIsLoading(false); toast({ title: 'Bitácora actualizada' }); };
 
   const handleEnviarRevision = async () => {
-      let allRegistros: any[] = [];
-      const formatRow = (row: any, cedula: string) => ({ "CÉDULA": cedula, "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim() });
-      bulkRows.filter(r => r.status.includes('found')).forEach(row => { allRegistros.push(formatRow(row, row.cedula)); });
+      const validParticipants = bulkRows.filter(r => r.status.includes('found'));
+      const allRegistros = validParticipants.map(row => ({ 
+          "CÉDULA": row.cedula, 
+          "APELLIDOS Y NOMBRE DEL COLABORADOR": `${row.apellidos} ${row.nombres}`.trim() 
+      }));
 
-      if (allRegistros.length === 0) return toast({ title: 'Datos incompletos', description: 'Valide al menos un colaborador antes de enviar.', variant: 'destructive' });
-
-      let draftIdToUpdate = selectedDraftId;
-      let targetDraft = drafts.find(d => d.id === selectedDraftId);
-      
-      if (!draftIdToUpdate || !targetDraft) {
-          draftIdToUpdate = crypto.randomUUID();
-          targetDraft = { id: draftIdToUpdate, nombreCurso: eventData.nombreCurso, fechaCreacion: new Date(), participantes: allRegistros.length, eventData: { ...eventData }, entryMode: 'bulk', bulkRows: [...bulkRows] };
-          setDrafts(prev => [...prev, targetDraft!]);
-          setSelectedDraftId(draftIdToUpdate);
+      if (allRegistros.length === 0 || !eventData.nombreCurso) {
+          return toast({ title: 'Datos incompletos', description: 'Asegúrese de tener un tema y participantes validados.', variant: 'destructive' });
       }
+
+      // IMPORTANTE: Buscamos el ID del evento en el draft seleccionado para evitar clonación
+      const targetDraft = drafts.find(d => d.id === selectedDraftId);
+      const eventoIdParaBackend = targetDraft?.eventoId || null;
 
       setIsLoading(true);
       try {
-        const payload = { eventData: eventData, registros: allRegistros, eventoId: targetDraft.eventoId || null };
-        const response = await fetch(`${API_URL}/enviar-revision`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error();
+        const payload = { 
+            eventData: eventData, 
+            registros: allRegistros, 
+            eventoId: eventoIdParaBackend 
+        };
+
+        const response = await fetch(`${API_URL}/enviar-revision`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify(payload) 
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Fallo en la comunicación con el servidor');
+        }
+
         const resData = await response.json();
-        setDrafts(prev => prev.map(d => d.id === draftIdToUpdate ? { ...d, eventoId: resData.evento_id, estado: 'PENDIENTE', comentario: '' } : d));
+        
+        // Actualizamos el draft local con el nuevo estado y el eventoId devuelto por el servidor
+        setDrafts(prev => prev.map(d => 
+            (d.id === selectedDraftId) 
+                ? { ...d, eventoId: resData.evento_id, estado: 'PENDIENTE', comentario: '' } 
+                : d
+        ));
+
         toast({ title: '¡Enviado a Revisión!', description: 'El administrador auditará los datos pronto.' });
-      } catch (error) { toast({ title: 'Error', description: 'No se pudo enviar al servidor.', variant: 'destructive' }); } finally { setIsLoading(false); }
+        handleNewCourse(); // Limpiamos el formulario para el siguiente curso
+      } catch (error: any) { 
+          toast({ title: 'Error', description: error.message, variant: 'destructive' }); 
+      } finally { 
+          setIsLoading(false); 
+      }
   };
 
   return (
@@ -278,15 +323,15 @@ export default function Index() {
         <AppHeader />
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
 
-          {isLocked && (
-            <div className={`p-4 rounded-lg flex items-center gap-3 ${currentDraft.estado === 'APROBADO' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
+          {isLocked && currentDraft && (
+            <div className={`p-4 rounded-lg flex items-center gap-3 animate-in fade-in zoom-in-95 ${currentDraft.estado === 'APROBADO' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
                 {currentDraft.estado === 'APROBADO' ? <CheckCircle className="w-6 h-6"/> : <Clock className="w-6 h-6"/>}
                 <div><p className="font-bold">Este curso está {currentDraft.estado}</p><p className="text-sm">No puedes editar los datos mientras se encuentre en este estado.</p></div>
             </div>
           )}
 
           {currentDraft?.estado === 'RECHAZADO' && (
-            <div className="p-4 rounded-lg flex items-start gap-3 bg-red-50 border border-red-200 text-red-800">
+            <div className="p-4 rounded-lg flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 animate-in slide-in-from-top-4">
                 <XCircle className="w-6 h-6 shrink-0"/>
                 <div><p className="font-bold">Curso Rechazado</p><p className="text-sm font-medium italic">"{currentDraft.comentario}"</p><p className="text-xs mt-2">Corrige los datos y vuelve a enviarlo a revisión.</p></div>
             </div>
