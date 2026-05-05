@@ -253,8 +253,9 @@ export default function Admin() {
     return [...datos].sort((a, b) => b.value - a.value);
   };
 
+  // REFORZADO: Ahora limpia "PLANTA" y "OFICINA" (insensible a mayúsculas/minúsculas)
   const cleanLabel = (name: string) => {
-    return name.replace(/planta\s+/i, '').trim();
+    return name.replace(/(planta|oficina)\s+/gi, '').trim().toUpperCase();
   };
 
   const fusionarYLimpiarDatos = (datos: any[]) => {
