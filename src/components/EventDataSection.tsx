@@ -55,7 +55,7 @@ export interface EventData {
   modalidad: string;
   fechaHoraInicio: any; 
   fechaHoraCierre: any;
-  totalHoras: string;
+  total_horas: string;
   tipoEvento: string;
   mesAnio: string;
   localidadCurso: string;
@@ -140,17 +140,6 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
             <Label className="field-label field-required px-1">Dimensión de Evento</Label>
             <Combobox options={DIMENSIONES} value={data.dimensionEvento} onChange={(value) => onChange('dimensionEvento', value)} placeholder="Seleccionar dimensión" disabled={disabled} />
           </div>
-        </div>
-
-        <div>
-          <Label className="field-label field-required">Lugar Físico / Plataforma</Label>
-          <Input 
-            placeholder="Ej: Sala de Juntas, Planta Lasso, Teams..." 
-            value={data.lugar} 
-            onChange={(e) => onChange('lugar', e.target.value)} 
-            disabled={disabled}
-            className={cn("h-10", !data.lugar && "border-red-500 shadow-sm shadow-red-200")}
-          />
         </div>
         
         <div className={cn("p-2", !data.modalidad && "rounded-md border border-red-500 shadow-sm shadow-red-200")}>
