@@ -12,7 +12,60 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
-// ... (OBJETIVOS, DIMENSIONES, etc. se mantienen igual) ...
+const OBJETIVOS = [
+  'Capacitar', 
+  'Difundir', 
+  'Socializar', 
+  'Desarrollo de competencias', 
+  'Actualización técnica', 
+  'Inducción', 
+  'Certificación', 
+  'Seguridad y salud'
+];
+
+const DIMENSIONES = [
+  'Seguridad y Salud Ocupacional', 
+  'Calidad', 
+  'Ambiente', 
+  'Energia', 
+  'Estrategica', 
+  'Tecnica', 
+  'Desarrollo', 
+  'Liderazgo', 
+  'Otros'
+];
+
+const TIPOS_EVENTO = [
+  'Charla', 
+  'Curso/Taller', 
+  'Entrenamiento Formativo', 
+  'Induccion', 
+  'Informacion (Reunion)'
+];
+
+const FACILITADORES = ['Otro Facilitador'];
+
+export interface EventData {
+  nombreCurso: string;
+  objetivo: string;
+  empresa: string;
+  facilitador: string;
+  dimensionEvento: string;
+  lugar: string;
+  modalidad: string;
+  fechaHoraInicio: any; 
+  fechaHoraCierre: any;
+  totalHoras: string;
+  tipoEvento: string;
+  mesAnio: string;
+  localidadCurso: string;
+}
+
+interface EventDataSectionProps {
+  data: EventData;
+  onChange: (field: keyof EventData, value: any) => void;
+  disabled?: boolean;
+}
 
 export function EventDataSection({ data, onChange, disabled }: EventDataSectionProps) {
   const { token } = useAuth();
@@ -20,7 +73,9 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
 
   useEffect(() => {
     if (token) {
-      fetch('https://thcd001f002-backend.onrender.com/empresas', { headers: { 'Authorization': `Bearer ${token}` } })
+      fetch('https://thcd001f002-backend.onrender.com/empresas', { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      })
         .then(res => res.json())
         .then(data => setEmpresas(data.map((e: any) => e.nombre)))
         .catch(() => {});
@@ -56,8 +111,6 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
       </div>
       
       <div className="p-6 space-y-6">
-        {/* ELIMINADA LA SECCIÓN DE SELECCIÓN DE SEDE/LOCALIDAD */}
-
         <div>
            <Label className="field-label field-required">Tema o Nombre del Curso</Label>
            <Input
