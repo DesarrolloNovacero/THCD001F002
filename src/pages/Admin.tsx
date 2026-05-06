@@ -35,7 +35,6 @@ const WrappedTick = (props: any) => {
   const words = payload.value.split(' ');
   const firstLine = words.slice(0, Math.ceil(words.length / 2)).join(' ');
   const secondLine = words.slice(Math.ceil(words.length / 2)).join(' ');
-
   return (
     <g transform={`translate(${x},${y})`}>
       <text x={0} y={0} dy={12} textAnchor="middle" fill="#475569" fontSize={9} fontWeight={600}>
@@ -49,13 +48,10 @@ const WrappedTick = (props: any) => {
 const KpiCard = ({ title, value, trend, isPercent = false, isTrendPercent = true }: { title: string, value: number, trend?: number, isPercent?: boolean, isTrendPercent?: boolean }) => {
   const isPositive = trend !== undefined && trend > 0;
   const isNegative = trend !== undefined && trend < 0;
-  
   return (
     <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-full">
       <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{title}</div>
-      <div className="text-3xl font-black text-[#004D7C] tracking-tight">
-        {formatNum(value)}{isPercent ? '%' : ''}
-      </div>
+      <div className="text-3xl font-black text-[#004D7C] tracking-tight">{formatNum(value)}{isPercent ? '%' : ''}</div>
       {trend !== undefined && (
         <div className="mt-3 flex items-center gap-1.5">
           <div className={`flex items-center justify-center p-1 rounded-full ${isPositive ? 'bg-emerald-100' : isNegative ? 'bg-red-100' : 'bg-slate-100'}`}>
@@ -93,12 +89,9 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, v
   const radius = innerRadius + (outerRadius - innerRadius) * 0.65;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
   if (percent < 0.05) return null;
-
   const pctText = `${(percent * 100).toFixed(0)}%`;
   const valText = String(formatNum(value));
-
   return (
     <g>
       <rect x={x - 20} y={y - 14} width={40} height={28} fill="rgba(255,255,255,0.9)" rx="4" stroke="#e2e8f0" strokeWidth="1" />
@@ -113,23 +106,18 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, v
 const CustomLabelWithBg = (props: any) => {
   const { x, y, width, height, value, position, isPercent } = props;
   if (!value || value === 0) return null;
-  
   const formattedValue = isPercent ? `${Number(value).toFixed(0)}%` : formatNum(value);
   const charCount = String(formattedValue).length;
   const rectWidth = charCount * 6 + 12;
   const rectHeight = 18;
-  
   let cx = 0, cy = 0;
   if (position === 'top') { cx = x + width / 2; cy = y - rectHeight / 2 - 2; } 
   else if (position === 'right') { cx = x + width + rectWidth / 2 + 4; cy = y + height / 2; } 
   else if (position === 'inside') { cx = x + width / 2; cy = y + height / 2; }
-
   return (
     <g>
       <rect x={cx - rectWidth / 2} y={cy - rectHeight / 2} width={rectWidth} height={rectHeight} fill="rgba(255,255,255,0.95)" rx="4" stroke="#e2e8f0" strokeWidth="1" />
-      <text x={cx} y={cy + 1} fill="#0f172a" fontSize="9" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
-        {formattedValue}
-      </text>
+      <text x={cx} y={cy + 1} fill="#0f172a" fontSize="9" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{formattedValue}</text>
     </g>
   );
 };
@@ -141,19 +129,15 @@ export default function Admin() {
   const [eventos, setEventos] = useState<EventoAdmin[]>([]);
   const [rechazoId, setRechazoId] = useState<string | null>(null);
   const [comentario, setComentario] = useState('');
-  
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<string>(new Date().toISOString().slice(0, 7));
   const [vistaDashboard, setVistaDashboard] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [estadoFiltro, setEstadoFiltro] = useState<string>('TODOS');
   const [filtroEstadoAuditoria, setFiltroEstadoAuditoria] = useState<string>('TODOS');
-  
   const [openCalendar, setOpenCalendar] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
-  // ESTADOS PARA CATÁLOGOS
   const [nombresCursos, setNombresCursos] = useState<CatalogoItem[]>([]);
   const [empresas, setEmpresas] = useState<CatalogoItem[]>([]);
   const [busquedaCatalogo, setBusquedaCatalogo] = useState('');
@@ -210,11 +194,7 @@ export default function Admin() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nombre: nuevoNombreCurso })
       });
-      if (res.ok) {
-        toast({ title: 'Curso añadido' });
-        setNuevoNombreCurso('');
-        fetchCatalogos();
-      }
+      if (res.ok) { setNuevoNombreCurso(''); fetchCatalogos(); toast({ title: 'Curso añadido' }); }
     } finally { setIsAdding(false); }
   };
 
@@ -242,35 +222,27 @@ export default function Admin() {
 
   const handleAprobar = async (id: string) => {
     if (!confirm('¿Aprobar curso?')) return;
-    try {
-      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/aprobar`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) { toast({ title: 'Aprobado' }); fetchEventos(); }
-    } catch (e) {}
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/aprobar`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) { toast({ title: 'Aprobado' }); fetchEventos(); }
   };
 
   const handleRevertir = async (id: string) => {
-    if (!confirm('¿Seguro que deseas revertir la aprobación?')) return;
-    try {
-      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/revertir`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) { toast({ title: 'Revertido' }); fetchEventos(); }
-    } catch (e) {}
+    if (!confirm('¿Revertir aprobación?')) return;
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/revertir`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) { toast({ title: 'Revertido' }); fetchEventos(); }
   };
 
   const handleRechazar = async () => {
     if (!comentario.trim()) return;
-    try {
-      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${rechazoId}/rechazar`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ comentario }) });
-      if (res.ok) { toast({ title: 'Rechazado' }); setRechazoId(null); setComentario(''); fetchEventos(); }
-    } catch (e) {}
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${rechazoId}/rechazar`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ comentario }) });
+    if (res.ok) { toast({ title: 'Rechazado' }); setRechazoId(null); setComentario(''); fetchEventos(); }
   };
 
   const handleExportarAuditoria = async (id: string, codigo: string) => {
-    try {
-      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/exportar`, { headers: { 'Authorization': `Bearer ${token}` } });
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `auditoria_${codigo}.xlsx`; a.click();
-    } catch (e) {}
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/exportar`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `auditoria_${codigo}.xlsx`; a.click();
   };
 
   const handleDescargarExcel = async () => {
@@ -278,7 +250,7 @@ export default function Admin() {
       const res = await fetch(`https://thcd001f002-backend.onrender.com/dashboard/exportar?mes=${periodoSeleccionado}&vista=${vistaDashboard}&estado=${estadoFiltro}`, { headers: { 'Authorization': `Bearer ${token}` } });
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `Reporte_${vistaDashboard}_${periodoSeleccionado}.xlsx`; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = `Reporte_${periodoSeleccionado}.xlsx`; a.click();
     } catch (e) { toast({ title: 'Error al exportar Excel', variant: 'destructive' }); }
   };
 
@@ -372,15 +344,22 @@ export default function Admin() {
                   <KpiCard title="Horas Promedio" value={dashboardData.kpis.horas_promedio} />
                   <KpiCard title="Cursos Realizados" value={dashboardData.kpis.total_cursos} />
                   <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-full relative">
-                    <p className="text-[11px] font-bold text-slate-500 absolute top-5 left-5 uppercase">Personal Capacitado</p>
+                    <p className="text-[11px] font-bold text-slate-500 absolute top-5 left-5 uppercase tracking-wider">Personal Capacitado</p>
                     <div className="w-32 h-16 relative mt-4">
                        <ResponsiveContainer><PieChart><Pie data={[{v: dashboardData.kpis.personal_capacitado_pct}, {v: 100 - dashboardData.kpis.personal_capacitado_pct}]} innerRadius={35} outerRadius={45} startAngle={180} endAngle={0} dataKey="v" stroke="none"><Cell fill={BLUE_MAIN}/><Cell fill="#f1f5f9"/></Pie></PieChart></ResponsiveContainer>
                        <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-2xl font-black text-[#004D7C]">{dashboardData.kpis.personal_capacitado_pct.toFixed(1)}%</p>
                     </div>
+                    {dashboardData.tendencias.diferencia_pct !== undefined && (
+                      <div className="flex items-center gap-1 mt-2">
+                        {dashboardData.tendencias.diferencia_pct > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : dashboardData.tendencias.diferencia_pct < 0 ? <TrendingDown className="w-3 h-3 text-red-500" /> : <Minus className="w-3 h-3 text-slate-300" />}
+                        <span className={`text-[10px] font-bold ${dashboardData.tendencias.diferencia_pct > 0 ? 'text-emerald-600' : dashboardData.tendencias.diferencia_pct < 0 ? 'text-red-600' : 'text-slate-400'}`}>
+                          {dashboardData.tendencias.diferencia_pct > 0 ? '+' : ''}{dashboardData.tendencias.diferencia_pct.toFixed(1)}% vs anterior
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* FILA DE GRÁFICOS 1 */}
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[380px] flex flex-col">
                     <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Modalidad por Horas</h3>
@@ -396,7 +375,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* FILA DE GRÁFICOS 2 (RESTAURADA) */}
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 lg:col-span-7 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
                     <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Unidad de Negocio</h3>
@@ -412,7 +390,6 @@ export default function Admin() {
           </>
         )}
 
-        {/* PESTAÑA AUDITORÍA (CON FILTRO DE ESTADOS) */}
         {activeTab === 'auditoria' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -430,7 +407,7 @@ export default function Admin() {
                   <tr><th className="py-4 px-4">Código</th><th className="py-4 px-4">Curso</th><th className="py-4 px-4">Creador por</th><th className="py-4 px-4">Fecha</th><th className="py-4 px-4">Estado</th><th className="py-4 px-4 text-right">Acciones</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {eventosFiltrados.map(e => (
+                  {eventos.filter(ev => filtroEstadoAuditoria === 'TODOS' || ev.estado === filtroEstadoAuditoria).map(e => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-mono text-slate-500">{e.codigo}</td>
                       <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
@@ -450,7 +427,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* PESTAÑA CATÁLOGOS (NUEVA FUNCIONALIDAD) */}
         {activeTab === 'catalogos' && (
           <div className="space-y-6">
             <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
@@ -491,7 +467,6 @@ export default function Admin() {
         )}
       </main>
 
-      {/* MODAL DE RECHAZO */}
       {rechazoId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
@@ -499,7 +474,7 @@ export default function Admin() {
             <textarea className="w-full border border-slate-300 rounded-lg p-3 text-sm min-h-[120px] mb-4 focus:ring-2 focus:ring-red-500 outline-none" placeholder="Escribe el motivo..." value={comentario} onChange={e => setComentario(e.target.value)} />
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => { setRechazoId(null); setComentario(''); }} className="font-bold">Cancelar</Button>
-              <Button onClick={handleRechazar} className="bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-200" disabled={!comentario.trim()}>Rechazar Evento</Button>
+              <Button onClick={handleRechazar} className="bg-red-600 hover:bg-red-700 text-white font-bold" disabled={!comentario.trim()}>Rechazar Evento</Button>
             </div>
           </div>
         </div>
