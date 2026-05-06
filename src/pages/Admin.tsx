@@ -8,7 +8,7 @@ import {
   Loader2, CheckCircle, XCircle, Download, Clock, MessageSquareX, 
   LayoutDashboard, ClipboardCheck, FileSpreadsheet, 
   TrendingUp, TrendingDown, Minus, Calendar, ChevronLeft, ChevronRight,
-  Undo2 // Importado para la función de revertir
+  Undo2, ListFilter
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -158,6 +158,9 @@ export default function Admin() {
   const [vistaDashboard, setVistaDashboard] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [estadoFiltro, setEstadoFiltro] = useState<string>('TODOS');
   
+  // NUEVO ESTADO: Filtro para la tabla de Auditoría
+  const [filtroEstadoAuditoria, setFiltroEstadoAuditoria] = useState<string>('TODOS');
+  
   const [openCalendar, setOpenCalendar] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -212,7 +215,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (token && activeTab === 'dashboard') fetchDashboard();
-    if (token && activeTab === 'auditoria' && eventos.length === 0) fetchEventos();
+    if (token && activeTab === 'auditoria') fetchEventos();
   }, [token, activeTab, periodoSeleccionado, vistaDashboard, estadoFiltro]);
 
   const handleDescargarExcel = async () => {
@@ -240,7 +243,6 @@ export default function Admin() {
     } catch (e) {}
   };
 
-  // NUEVA FUNCIÓN: Revertir a Pendiente
   const handleRevertir = async (id: string) => {
     if (!confirm('¿Seguro que deseas revertir la aprobación? El curso volverá a estar pendiente.')) return;
     try {
@@ -303,6 +305,12 @@ export default function Admin() {
     });
     return { data: datos100, llaves: Array.from(llavesUnicas) };
   }, [dashboardData]);
+
+  // LÓGICA DE FILTRADO PARA LA TABLA DE AUDITORÍA
+  const eventosFiltrados = useMemo(() => {
+    if (filtroEstadoAuditoria === 'TODOS') return eventos;
+    return eventos.filter(e => e.estado === filtroEstadoAuditoria);
+  }, [eventos, filtroEstadoAuditoria]);
 
   const datosModalidad = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.modalidad));
   const datosGenero = procesarDatosOrdenados(fusionarYLimpiarDatos(dashboardData?.graficos?.genero));
@@ -508,14 +516,42 @@ export default function Admin() {
 
         {activeTab === 'auditoria' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-[#004D7C] uppercase tracking-wide flex items-center gap-2 mb-6"><ClipboardCheck className="w-5 h-5" /> Auditoría Operativa</h2>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h2 className="text-lg font-bold text-[#004D7C] uppercase tracking-wide flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5" /> Auditoría Operativa
+              </h2>
+              
+              {/* FILTROS DE ESTADO PARA AUDITORÍA */}
+              <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-2 px-2 border-r border-slate-200 mr-1">
+                  <ListFilter className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Filtrar Estado:</span>
+                </div>
+                <div className="flex gap-1">
+                  {['TODOS', 'PENDIENTE', 'APROBADO', 'RECHAZADO'].map(estado => (
+                    <button 
+                      key={estado} 
+                      onClick={() => setFiltroEstadoAuditoria(estado)} 
+                      className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
+                        filtroEstadoAuditoria === estado 
+                        ? 'bg-[#004D7C] text-white shadow-sm' 
+                        : 'text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {estado}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px] tracking-wider">
                   <tr><th className="py-4 px-4">Código</th><th className="py-4 px-4">Curso</th><th className="py-4 px-4">Creador por</th><th className="py-4 px-4">Fecha</th><th className="py-4 px-4">Estado</th><th className="py-4 px-4 text-right">Acciones</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {eventos.map(e => (
+                  {eventosFiltrados.length > 0 ? eventosFiltrados.map(e => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-mono font-medium text-slate-500">{e.codigo}</td>
                       <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
@@ -529,15 +565,27 @@ export default function Admin() {
                       <td className="py-3 px-4 text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleExportarAuditoria(e.id, e.codigo)} className="text-slate-600 hover:text-[#004D7C] hover:bg-slate-100 h-8 w-8 p-0"><Download className="w-4 h-4" /></Button>
                         
-                        {/* NUEVO BOTÓN: REVERTIR APROBACIÓN */}
                         {e.estado === 'APROBADO' && (
-                          <Button variant="outline" size="sm" onClick={() => handleRevertir(e.id)} className="text-amber-600 border-amber-200 hover:bg-amber-50 h-8 w-8 p-0" title="Revertir a Pendiente"><Undo2 className="w-4 h-4" /></Button>
+                          <button onClick={() => handleRevertir(e.id)} className="inline-flex items-center justify-center border border-amber-200 bg-white text-amber-600 hover:bg-amber-50 rounded-md h-8 w-8 transition-colors" title="Revertir a Pendiente">
+                            <Undo2 className="w-4 h-4" />
+                          </button>
                         )}
 
-                        {e.estado === 'PENDIENTE' && ( <><Button variant="outline" size="sm" onClick={() => handleAprobar(e.id)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 h-8 w-8 p-0"><CheckCircle className="w-4 h-4" /></Button><Button variant="outline" size="sm" onClick={() => setRechazoId(e.id)} className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-8 p-0"><XCircle className="w-4 h-4" /></Button></> )}
+                        {e.estado === 'PENDIENTE' && ( 
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => handleAprobar(e.id)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 h-8 w-8 p-0"><CheckCircle className="w-4 h-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setRechazoId(e.id)} className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-8 p-0"><XCircle className="w-4 h-4" /></Button>
+                          </> 
+                        )}
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 font-medium bg-slate-50/50">
+                        No hay cursos con el estado "{filtroEstadoAuditoria}"
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
