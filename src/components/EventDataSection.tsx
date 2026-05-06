@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { BookOpen, Calendar as CalendarIcon, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -41,6 +41,14 @@ const TIPOS_EVENTO = [
   'Entrenamiento Formativo', 
   'Induccion', 
   'Informacion (Reunion)'
+];
+
+const LUGARES = [
+  'Novacero Quito',
+  'Novacero Lasso',
+  'Novacero Guayaquil',
+  'Novacero Austro',
+  'Virtual'
 ];
 
 const FACILITADORES = ['Otro Facilitador'];
@@ -148,13 +156,25 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
             <Combobox options={DIMENSIONES} value={data.dimensionEvento} onChange={(value) => onChange('dimensionEvento', value)} placeholder="Seleccionar dimensión" disabled={disabled} />
           </div>
         </div>
+
+        <div className={cn(!data.lugar && "rounded-md border border-red-500 shadow-sm shadow-red-200")}>
+          <Label className="field-label field-required px-1">Lugar del Evento</Label>
+          <Combobox 
+            options={LUGARES} 
+            value={data.lugar} 
+            onChange={(value) => onChange('lugar', value)} 
+            placeholder="Seleccionar lugar físico o virtual" 
+            disabled={disabled} 
+          />
+        </div>
         
         <div className={cn("p-2", !data.modalidad && "rounded-md border border-red-500 shadow-sm shadow-red-200")}>
           <Label className="field-label field-required">Modalidad</Label>
-          <RadioGroup value={data.modalidad} onValueChange={(value) => onChange('modalidad', value)} disabled={disabled} className="flex gap-6 mt-2">
+          <RadioGroup value={data.modalidad} onValueChange={(value) => onChange('modalidad', value)} disabled={disabled} className="flex flex-wrap gap-6 mt-2">
             <div className="flex items-center space-x-2"><RadioGroupItem value="Interna" id="Interna" /><Label htmlFor="Interna" className="font-normal cursor-pointer">Interna</Label></div>
             <div className="flex items-center space-x-2"><RadioGroupItem value="Externa" id="Externa" /><Label htmlFor="Externa" className="font-normal cursor-pointer">Externa</Label></div>
             <div className="flex items-center space-x-2"><RadioGroupItem value="In House" id="In House" /><Label htmlFor="In House" className="font-normal cursor-pointer">In House</Label></div>
+            <div className="flex items-center space-x-2"><RadioGroupItem value="E-Learning" id="E-Learning" /><Label htmlFor="E-Learning" className="font-normal cursor-pointer">E-Learning</Label></div>
           </RadioGroup>
         </div>
         
