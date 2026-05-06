@@ -245,12 +245,10 @@ export default function Admin() {
   };
 
   const handleExportarAuditoria = async (id: string, codigo: string) => {
-    try {
-      const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/exportar`, { headers: { 'Authorization': `Bearer ${token}` } });
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `auditoria_${codigo}.xlsx`; a.click();
-    } catch (e) {}
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/admin/eventos/${id}/exportar`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `auditoria_${codigo}.xlsx`; a.click();
   };
 
   const handleDescargarExcel = async () => {
@@ -258,7 +256,7 @@ export default function Admin() {
       const res = await fetch(`https://thcd001f002-backend.onrender.com/dashboard/exportar?mes=${periodoSeleccionado}&vista=${vistaDashboard}&estado=${estadoFiltro}`, { headers: { 'Authorization': `Bearer ${token}` } });
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `Reporte_${vistaDashboard}_${periodoSeleccionado}.xlsx`; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = `Reporte_${periodoSeleccionado}.xlsx`; a.click();
     } catch (e) { toast({ title: 'Error al exportar Excel', variant: 'destructive' }); }
   };
 
@@ -307,8 +305,8 @@ export default function Admin() {
   const datosUnidad = [...fusionarYLimpiarDatos(dashboardData?.graficos?.unidad_negocio)].sort((a,b) => b.value - a.value);
   const datosLocalidad = [...fusionarYLimpiarDatos(dashboardData?.graficos?.localidad)].sort((a,b) => b.value - a.value);
 
-  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  const selectMonth = (m: number) => { setPeriodoSeleccionado(`${currentDate.getFullYear()}-${String(m + 1).padStart(2, '0')}`); setOpenCalendar(false); };
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const selectMonth = (m: number) => { setPeriodoSeleccionado(`${currentDate.getFullYear()}-${String(m+1).padStart(2,'0')}`); setOpenCalendar(false); };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
@@ -320,76 +318,97 @@ export default function Admin() {
           <Button variant={activeTab === 'catalogos' ? 'default' : 'outline'} onClick={() => setActiveTab('catalogos')} className={activeTab === 'catalogos' ? 'bg-[#004D7C] text-white' : 'bg-white'}><Settings2 className="w-4 h-4 mr-2" /> Catálogos</Button>
         </div>
 
-        {activeTab === 'dashboard' && dashboardData && (
-          <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              <KpiCard title="Total Colaboradores" value={dashboardData.kpis.total_colaboradores} />
-              <KpiCard title="Horas Totales" value={dashboardData.kpis.total_horas} trend={dashboardData.tendencias.diferencia_horas} isTrendPercent={false} />
-              <KpiCard title="Horas Promedio" value={dashboardData.kpis.horas_promedio} />
-              <KpiCard title="Cursos Realizados" value={dashboardData.kpis.total_cursos} />
-              
-              {/* GRÁFICO PERSONAL CAPACITADO - MÁS GRANDE Y ESTABLE */}
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-full relative">
-                <p className="text-[11px] font-bold text-slate-500 absolute top-5 left-5 uppercase tracking-wider">Personal Capacitado</p>
-                <div className="w-full h-28 relative mt-6">
-                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={[{v: dashboardData.kpis.personal_capacitado_pct}, {v: 100 - dashboardData.kpis.personal_capacitado_pct}]} 
-                        innerRadius={55} 
-                        outerRadius={75} 
-                        startAngle={180} 
-                        endAngle={0} 
-                        cy="100%" 
-                        dataKey="v" 
-                        stroke="none"
-                      >
-                        <Cell fill={BLUE_MAIN}/>
-                        <Cell fill="#f1f5f9"/>
-                      </Pie>
-                    </PieChart>
-                   </ResponsiveContainer>
-                   <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-3xl font-black text-[#004D7C]">
-                    {dashboardData.kpis.personal_capacitado_pct.toFixed(1)}%
-                   </p>
+        {activeTab === 'dashboard' && (
+          <>
+            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-6">
+                <div className="flex bg-slate-100 p-1 rounded-md">
+                  <button onClick={() => setVistaDashboard('MENSUAL')} className={`px-4 py-1.5 text-xs font-bold rounded ${vistaDashboard === 'MENSUAL' ? 'bg-white text-[#004D7C] shadow-sm' : 'text-slate-500'}`}>Mensual</button>
+                  <button onClick={() => setVistaDashboard('ANUAL')} className={`px-4 py-1.5 text-xs font-bold rounded ${vistaDashboard === 'ANUAL' ? 'bg-white text-[#004D7C] shadow-sm' : 'text-slate-500'}`}>Anual</button>
                 </div>
-                {dashboardData.tendencias.diferencia_pct !== undefined && (
-                  <div className="mt-2 flex items-center gap-1">
-                    {dashboardData.tendencias.diferencia_pct > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500"/> : <TrendingDown className="w-3 h-3 text-red-500"/>}
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {dashboardData.tendencias.diferencia_pct > 0 ? '+' : ''}{dashboardData.tendencias.diferencia_pct.toFixed(1)}% vs anterior
-                    </span>
+                <div className="relative cursor-pointer" onClick={() => setOpenCalendar(!openCalendar)}>
+                  <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-md px-4 h-9 shadow-sm"><Calendar className="w-4 h-4 text-slate-500" /><span className="text-sm font-bold text-[#004D7C]">{periodoSeleccionado}</span></div>
+                  {openCalendar && (
+                    <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl p-4 z-50 w-64">
+                       <div className="flex justify-between mb-2 font-bold text-xs px-1"><span>{currentDate.getFullYear()}</span><div className="flex gap-2"><ChevronLeft className="w-4 h-4" onClick={(e) => {e.stopPropagation(); setCurrentDate(new Date(currentDate.getFullYear()-1, 0))}}/><ChevronRight className="w-4 h-4" onClick={(e) => {e.stopPropagation(); setCurrentDate(new Date(currentDate.getFullYear()+1, 0))}}/></div></div>
+                       <div className="grid grid-cols-4 gap-2">{months.map((m, i) => <button key={i} onClick={() => selectMonth(i)} className="text-[10px] p-2 rounded hover:bg-[#004D7C] hover:text-white font-bold">{m}</button>)}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex border border-slate-200 rounded-md overflow-hidden h-9">
+                  {['ACTIVO', 'CESADO', 'TODOS'].map(estado => <button key={estado} onClick={() => setEstadoFiltro(estado)} className={`px-4 py-1 text-[11px] font-bold border-r last:border-0 ${estadoFiltro === estado ? 'bg-[#004D7C] text-white' : 'bg-white text-slate-500'}`}>{estado}</button>)}
+                </div>
+              </div>
+              <Button onClick={handleDescargarExcel} variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs font-bold gap-2 h-9 px-4"><FileSpreadsheet className="w-4 h-4" /> Exportar</Button>
+            </div>
+
+            {isLoadingDashboard ? <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#004D7C]" /></div> : dashboardData && (
+              <div className="flex flex-col gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                  <KpiCard title="Total Colaboradores" value={dashboardData.kpis.total_colaboradores} />
+                  <KpiCard title="Horas Totales" value={dashboardData.kpis.total_horas} trend={dashboardData.tendencias.diferencia_horas} isTrendPercent={false} />
+                  <KpiCard title="Horas Promedio" value={dashboardData.kpis.horas_promedio} />
+                  <KpiCard title="Cursos Realizados" value={dashboardData.kpis.total_cursos} />
+                  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-full relative">
+                    <p className="text-[11px] font-bold text-slate-500 absolute top-5 left-5 uppercase tracking-wider">Personal Capacitado</p>
+                    <div className="w-full h-28 relative mt-6">
+                       <ResponsiveContainer width="100%" height="100%">
+                         <PieChart>
+                           <Pie 
+                             data={[{v: dashboardData.kpis.personal_capacitado_pct}, {v: 100 - dashboardData.kpis.personal_capacitado_pct}]} 
+                             innerRadius={55} 
+                             outerRadius={75} 
+                             startAngle={180} 
+                             endAngle={0} 
+                             cy="100%" 
+                             dataKey="v" 
+                             stroke="none"
+                           >
+                             <Cell fill={BLUE_MAIN}/><Cell fill="#f1f5f9"/>
+                           </Pie>
+                         </PieChart>
+                       </ResponsiveContainer>
+                       <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-3xl font-black text-[#004D7C]">{dashboardData.kpis.personal_capacitado_pct.toFixed(1)}%</p>
+                    </div>
+                    {dashboardData.tendencias.diferencia_pct !== undefined && (
+                      <div className="flex items-center gap-1 mt-2">
+                        {dashboardData.tendencias.diferencia_pct > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : dashboardData.tendencias.diferencia_pct < 0 ? <TrendingDown className="w-3 h-3 text-red-500" /> : <Minus className="w-3 h-3 text-slate-300" />}
+                        <span className={`text-[10px] font-bold ${dashboardData.tendencias.diferencia_pct > 0 ? 'text-emerald-600' : dashboardData.tendencias.diferencia_pct < 0 ? 'text-red-600' : 'text-slate-400'}`}>
+                          {dashboardData.tendencias.diferencia_pct > 0 ? '+' : ''}{dashboardData.tendencias.diferencia_pct.toFixed(1)}% vs anterior
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border h-[380px] flex flex-col">
-                <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Modalidad por Horas</h3>
-                <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosModalidad} innerRadius="45%" outerRadius="75%" paddingAngle={2} dataKey="value" labelLine={false} label={CustomPieLabel}>{datosModalidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[idx % COLORS_STACK.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36}/></PieChart></ResponsiveContainer>
-              </div>
-              <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border h-[380px] flex flex-col">
-                <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Género</h3>
-                <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosGenero} innerRadius="45%" outerRadius="75%" paddingAngle={2} dataKey="value" labelLine={false} label={CustomPieLabel}>{datosGenero.map((e) => <Cell key={e.name} fill={e.name.includes('FEMENINO') ? YELLOW_MAIN : BLUE_MAIN} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36}/></PieChart></ResponsiveContainer>
-              </div>
-              <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border h-[380px] flex flex-col">
-                <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Localidad</h3>
-                <ResponsiveContainer width="100%" height="100%"><BarChart data={datosLocalidad} layout="vertical" margin={{ right: 40 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" /><XAxis type="number" hide /><YAxis dataKey="name" type="category" tick={{fontSize: 9, fontWeight: 600}} width={75} axisLine={false}/><Tooltip content={<CustomTooltip />} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>{datosLocalidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[(idx+1) % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(p) => <CustomLabelWithBg {...p} position="right" />}/></Bar></BarChart></ResponsiveContainer>
-              </div>
-            </div>
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[380px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Modalidad por Horas</h3>
+                    <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosModalidad} innerRadius="45%" outerRadius="75%" paddingAngle={2} dataKey="value" labelLine={false} label={CustomPieLabel}>{datosModalidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[idx % COLORS_STACK.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36}/></PieChart></ResponsiveContainer>
+                  </div>
+                  <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[380px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Género</h3>
+                    <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosGenero} innerRadius="45%" outerRadius="75%" paddingAngle={2} dataKey="value" labelLine={false} label={CustomPieLabel}>{datosGenero.map((e) => <Cell key={e.name} fill={e.name.includes('FEMENINO') ? YELLOW_MAIN : BLUE_MAIN} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36}/></PieChart></ResponsiveContainer>
+                  </div>
+                  <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[380px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Localidad</h3>
+                    <ResponsiveContainer width="100%" height="100%"><BarChart data={datosLocalidad} layout="vertical" margin={{ right: 40 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" /><XAxis type="number" hide /><YAxis dataKey="name" type="category" tick={{fontSize: 9, fontWeight: 600}} width={75} axisLine={false}/><Tooltip content={<CustomTooltip />} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>{datosLocalidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[(idx+1) % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(p) => <CustomLabelWithBg {...p} position="right" />}/></Bar></BarChart></ResponsiveContainer>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-12 lg:col-span-7 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
-                <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Unidad de Negocio</h3>
-                <ResponsiveContainer width="100%" height="100%"><BarChart data={datosUnidad} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={50}>{datosUnidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[idx % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(props: any) => <CustomLabelWithBg {...props} position="top" />}/></Bar></BarChart></ResponsiveContainer>
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 lg:col-span-7 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Unidad de Negocio</h3>
+                    <ResponsiveContainer width="100%" height="100%"><BarChart data={datosUnidad} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={50}>{datosUnidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[idx % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(props: any) => <CustomLabelWithBg {...props} position="top" />}/></Bar></BarChart></ResponsiveContainer>
+                  </div>
+                  <div className="col-span-12 lg:col-span-5 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Dimension de Evento por Grupo de Personal</h3>
+                    <ResponsiveContainer width="100%" height="100%"><BarChart data={procesarDimension100.data} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="dimension" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Legend wrapperStyle={{fontSize: '10px', paddingTop: '20px'}} />{procesarDimension100.llaves.map((llave, idx) => (<Bar key={llave} dataKey={llave} stackId="1" fill={COLORS_STACK[idx % COLORS_STACK.length]}><LabelList dataKey={llave} content={(props: any) => <CustomLabelWithBg {...props} position="inside" isPercent={true} />}/></Bar>))}</BarChart></ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-              <div className="col-span-12 lg:col-span-5 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
-                <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Dimension de Evento por Grupo de Personal</h3>
-                <ResponsiveContainer width="100%" height="100%"><BarChart data={procesarDimension100.data} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="dimension" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Legend wrapperStyle={{fontSize: '10px', paddingTop: '20px'}} />{procesarDimension100.llaves.map((llave, idx) => (<Bar key={llave} dataKey={llave} stackId="1" fill={COLORS_STACK[idx % COLORS_STACK.length]}><LabelList dataKey={llave} content={(props: any) => <CustomLabelWithBg {...props} position="inside" isPercent={true} />}/></Bar>))}</BarChart></ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
 
         {activeTab === 'auditoria' && (
@@ -409,7 +428,7 @@ export default function Admin() {
                   <tr><th className="py-4 px-4">Código</th><th className="py-4 px-4">Curso</th><th className="py-4 px-4">Creador por</th><th className="py-4 px-4">Fecha</th><th className="py-4 px-4">Estado</th><th className="py-4 px-4 text-right">Acciones</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {eventos.filter(ev => filtroEstadoAuditoria === 'TODOS' || ev.estado === filtroEstadoAuditoria).map(e => (
+                  {eventosFiltrados.map(e => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-mono text-slate-500">{e.codigo}</td>
                       <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
@@ -459,7 +478,7 @@ export default function Admin() {
                   </div>
                   <div className="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto p-1">
                     {catalogosFiltrados.empresas.map(e => (
-                      <div key={e.id} className="group flex items-center gap-1.5 bg-slate-100 border px-3 py-1.5 rounded-lg transition-all"><span className="text-xs font-bold text-slate-700">{e.nombre}</span><button onClick={() => handleDeleteEmpresa(e.id)} className="text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3 h-3" /></button></div>
+                      <div key={e.id} className="group flex items-center gap-1.5 bg-slate-100 hover:bg-[#004D7C]/10 border border-slate-200 px-3 py-1.5 rounded-lg transition-all"><span className="text-xs font-bold text-slate-700">{e.nombre}</span><button onClick={() => handleDeleteEmpresa(e.id)} className="text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3 h-3" /></button></div>
                     ))}
                   </div>
                 </div>
