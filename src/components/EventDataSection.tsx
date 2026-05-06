@@ -55,7 +55,7 @@ export interface EventData {
   modalidad: string;
   fechaHoraInicio: any; 
   fechaHoraCierre: any;
-  total_horas: string;
+  totalHoras: string;
   tipoEvento: string;
   mesAnio: string;
   localidadCurso: string;
@@ -70,6 +70,7 @@ interface EventDataSectionProps {
 export function EventDataSection({ data, onChange, disabled }: EventDataSectionProps) {
   const { token } = useAuth();
   const [empresas, setEmpresas] = useState<string[]>([]);
+  const [nombresCursos, setNombresCursos] = useState<string[]>([]);
 
   useEffect(() => {
     if (token) {
@@ -78,6 +79,13 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
       })
         .then(res => res.json())
         .then(data => setEmpresas(data.map((e: any) => e.nombre)))
+        .catch(() => {});
+
+      fetch('https://thcd001f002-backend.onrender.com/nombres-cursos', { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      })
+        .then(res => res.json())
+        .then(data => setNombresCursos(data.map((n: any) => n.nombre)))
         .catch(() => {});
     }
   }, [token]);
@@ -112,14 +120,13 @@ export function EventDataSection({ data, onChange, disabled }: EventDataSectionP
       
       <div className="p-6 space-y-6">
         <div>
-           <Label className="field-label field-required">Tema o Nombre del Curso</Label>
-           <Input
-             type="text"
-             placeholder="Ej: Seguridad en el trabajo, Excel Básico..."
-             value={data.nombreCurso}
-             onChange={(e) => onChange('nombreCurso', e.target.value)}
-             disabled={disabled}
-             className={cn("h-10", !data.nombreCurso && "border-red-500 shadow-sm shadow-red-200")}
+           <Label className="field-label field-required px-1">Tema o Nombre del Curso</Label>
+           <Combobox 
+             options={nombresCursos} 
+             value={data.nombreCurso} 
+             onChange={(value) => onChange('nombreCurso', value)} 
+             placeholder="Seleccionar o buscar curso" 
+             disabled={disabled} 
            />
         </div>
 
