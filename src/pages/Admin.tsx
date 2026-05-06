@@ -98,13 +98,10 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, v
 
   const pctText = `${(percent * 100).toFixed(0)}%`;
   const valText = String(formatNum(value));
-  const maxChars = Math.max(pctText.length, valText.length);
-  const rectWidth = maxChars * 6 + 16;
-  const rectHeight = 28;
 
   return (
     <g>
-      <rect x={x - rectWidth / 2} y={y - rectHeight / 2} width={rectWidth} height={rectHeight} fill="rgba(255,255,255,0.9)" rx="4" stroke="#e2e8f0" strokeWidth="1" />
+      <rect x={x - 20} y={y - 14} width={40} height={28} fill="rgba(255,255,255,0.9)" rx="4" stroke="#e2e8f0" strokeWidth="1" />
       <text x={x} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
         {pctText}
         <tspan x={x} y={y + 8} fontSize="9" fill="#475569">{valText}</tspan>
@@ -152,6 +149,7 @@ export default function Admin() {
   
   const [openCalendar, setOpenCalendar] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
@@ -221,11 +219,8 @@ export default function Admin() {
   };
 
   const handleDeleteCurso = async (id: string) => {
-    if (!confirm('¿Eliminar este nombre de la lista maestra?')) return;
-    const res = await fetch(`https://thcd001f002-backend.onrender.com/nombres-cursos/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    if (!confirm('¿Eliminar nombre?')) return;
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/nombres-cursos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
     if (res.ok) fetchCatalogos();
   };
 
@@ -236,18 +231,12 @@ export default function Admin() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ nombre: nuevaEmpresa })
     });
-    if (res.ok) {
-      setNuevaEmpresa('');
-      fetchCatalogos();
-    }
+    if (res.ok) { setNuevaEmpresa(''); fetchCatalogos(); }
   };
 
   const handleDeleteEmpresa = async (id: string) => {
-    if (!confirm('¿Eliminar esta empresa?')) return;
-    const res = await fetch(`https://thcd001f002-backend.onrender.com/empresas/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    if (!confirm('¿Eliminar empresa?')) return;
+    const res = await fetch(`https://thcd001f002-backend.onrender.com/empresas/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
     if (res.ok) fetchCatalogos();
   };
 
@@ -293,7 +282,7 @@ export default function Admin() {
     } catch (e) { toast({ title: 'Error al exportar Excel', variant: 'destructive' }); }
   };
 
-  const cleanLabel = (name: string) => name.replace(/(planta|oficina)\s+/gi, '').trim().toUpperCase();
+  const cleanLabel = (name: string) => (name || "N/A").replace(/(planta|oficina)\s+/gi, '').trim().toUpperCase();
 
   const fusionarYLimpiarDatos = (datos: any[]) => {
     if (!datos) return [];
@@ -391,6 +380,7 @@ export default function Admin() {
                   </div>
                 </div>
 
+                {/* FILA DE GRÁFICOS 1 */}
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[380px] flex flex-col">
                     <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Modalidad por Horas</h3>
@@ -405,11 +395,24 @@ export default function Admin() {
                     <ResponsiveContainer width="100%" height="100%"><BarChart data={datosLocalidad} layout="vertical" margin={{ right: 40 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" /><XAxis type="number" hide /><YAxis dataKey="name" type="category" tick={{fontSize: 9, fontWeight: 600}} width={75} axisLine={false}/><Tooltip content={<CustomTooltip />} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>{datosLocalidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[(idx+1) % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(p) => <CustomLabelWithBg {...p} position="right" />}/></Bar></BarChart></ResponsiveContainer>
                   </div>
                 </div>
+
+                {/* FILA DE GRÁFICOS 2 (RESTAURADA) */}
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 lg:col-span-7 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Horas por Unidad de Negocio</h3>
+                    <ResponsiveContainer width="100%" height="100%"><BarChart data={datosUnidad} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={50}>{datosUnidad.map((_, idx) => <Cell key={idx} fill={COLORS_STACK[idx % COLORS_STACK.length]} />)}<LabelList dataKey="value" content={(props: any) => <CustomLabelWithBg {...props} position="top" />}/></Bar></BarChart></ResponsiveContainer>
+                  </div>
+                  <div className="col-span-12 lg:col-span-5 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <h3 className="text-[11px] font-bold text-slate-700 uppercase mb-4 border-b pb-2">Dimension de Evento por Grupo de Personal</h3>
+                    <ResponsiveContainer width="100%" height="100%"><BarChart data={procesarDimension100.data} margin={{ top: 20, right: 0, left: -20, bottom: 40 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="dimension" interval={0} tick={<WrappedTick />} axisLine={false} tickLine={false} height={50} /><YAxis tick={{fontSize: 10, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} /><Legend wrapperStyle={{fontSize: '10px', paddingTop: '20px'}} />{procesarDimension100.llaves.map((llave, idx) => (<Bar key={llave} dataKey={llave} stackId="1" fill={COLORS_STACK[idx % COLORS_STACK.length]}><LabelList dataKey={llave} content={(props: any) => <CustomLabelWithBg {...props} position="inside" isPercent={true} />}/></Bar>))}</BarChart></ResponsiveContainer>
+                  </div>
+                </div>
               </div>
             )}
           </>
         )}
 
+        {/* PESTAÑA AUDITORÍA (CON FILTRO DE ESTADOS) */}
         {activeTab === 'auditoria' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -433,9 +436,7 @@ export default function Admin() {
                       <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
                       <td className="py-3 px-4 text-slate-600">{e.creador}</td>
                       <td className="py-3 px-4 text-slate-500">{new Date(e.fecha).toLocaleDateString()}</td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${e.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-800' : e.estado === 'RECHAZADO' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{e.estado}</span>
-                      </td>
+                      <td className="py-3 px-4"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${e.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-800' : e.estado === 'RECHAZADO' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{e.estado}</span></td>
                       <td className="py-3 px-4 text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleExportarAuditoria(e.id, e.codigo)} className="h-8 w-8 p-0"><Download className="w-4 h-4" /></Button>
                         {e.estado === 'APROBADO' && <Button variant="outline" size="sm" onClick={() => handleRevertir(e.id)} className="text-amber-600 border-amber-200 h-8 w-8 p-0"><Undo2 className="w-4 h-4"/></Button>}
@@ -449,54 +450,38 @@ export default function Admin() {
           </div>
         )}
 
+        {/* PESTAÑA CATÁLOGOS (NUEVA FUNCIONALIDAD) */}
         {activeTab === 'catalogos' && (
           <div className="space-y-6">
-            {/* BUSCADOR GLOBAL DE CATÁLOGOS */}
             <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400" />
-              <Input placeholder="Buscar curso o empresa en los catálogos..." value={busquedaCatalogo} onChange={e => setBusquedaCatalogo(e.target.value)} className="border-none shadow-none focus-visible:ring-0 text-lg font-medium" />
+              <Input placeholder="Buscar en los catálogos..." value={busquedaCatalogo} onChange={e => setBusquedaCatalogo(e.target.value)} className="border-none shadow-none focus-visible:ring-0 text-lg font-medium" />
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* SECCIÓN NOMBRES DE CURSOS */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
-                  <div className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#004D7C]"/><h2 className="font-bold text-slate-800 uppercase text-sm tracking-tight">Catálogo de Cursos</h2></div>
-                  <span className="text-[10px] font-bold bg-[#004D7C] text-white px-2 py-0.5 rounded-full">{catalogosFiltrados.cursos.length} items</span>
-                </div>
+                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center"><div className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#004D7C]"/><h2 className="font-bold text-slate-800 uppercase text-sm">Catálogo de Cursos</h2></div></div>
                 <div className="p-5 space-y-4">
                   <div className="flex gap-2">
                     <Input placeholder="Nuevo nombre de curso..." value={nuevoNombreCurso} onChange={e => setNuevoNombreCurso(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddCurso()} />
-                    <Button onClick={handleAddCurso} disabled={isAdding || !nuevoNombreCurso.trim()} className="bg-[#004D7C] hover:bg-[#004D7C]/90"><Plus className="w-4 h-4"/></Button>
+                    <Button onClick={handleAddCurso} className="bg-[#004D7C]"><Plus className="w-4 h-4"/></Button>
                   </div>
                   <div className="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto p-1">
                     {catalogosFiltrados.cursos.map(c => (
-                      <div key={c.id} className="group flex items-center gap-1.5 bg-slate-100 hover:bg-[#004D7C]/10 border border-slate-200 px-3 py-1.5 rounded-lg transition-all">
-                        <span className="text-xs font-bold text-slate-700">{c.nombre}</span>
-                        <button onClick={() => handleDeleteCurso(c.id)} className="text-slate-400 hover:text-red-600 p-0.5 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
-                      </div>
+                      <div key={c.id} className="group flex items-center gap-1.5 bg-slate-100 hover:bg-[#004D7C]/10 border border-slate-200 px-3 py-1.5 rounded-lg transition-all"><span className="text-xs font-bold text-slate-700">{c.nombre}</span><button onClick={() => handleDeleteCurso(c.id)} className="text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3 h-3" /></button></div>
                     ))}
                   </div>
                 </div>
               </div>
-
-              {/* SECCIÓN EMPRESAS */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
-                  <div className="flex items-center gap-2"><Building2 className="w-5 h-5 text-[#004D7C]"/><h2 className="font-bold text-slate-800 uppercase text-sm tracking-tight">Empresas Capacitadoras</h2></div>
-                  <span className="text-[10px] font-bold bg-[#004D7C] text-white px-2 py-0.5 rounded-full">{catalogosFiltrados.empresas.length} items</span>
-                </div>
+                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center"><div className="flex items-center gap-2"><Building2 className="w-5 h-5 text-[#004D7C]"/><h2 className="font-bold text-slate-800 uppercase text-sm">Empresas</h2></div></div>
                 <div className="p-5 space-y-4">
                   <div className="flex gap-2">
                     <Input placeholder="Nueva empresa..." value={nuevaEmpresa} onChange={e => setNuevaEmpresa(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddEmpresa()} />
-                    <Button onClick={handleAddEmpresa} className="bg-[#004D7C] hover:bg-[#004D7C]/90"><Plus className="w-4 h-4"/></Button>
+                    <Button onClick={handleAddEmpresa} className="bg-[#004D7C]"><Plus className="w-4 h-4"/></Button>
                   </div>
                   <div className="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto p-1">
                     {catalogosFiltrados.empresas.map(e => (
-                      <div key={e.id} className="group flex items-center gap-1.5 bg-slate-100 hover:bg-[#004D7C]/10 border border-slate-200 px-3 py-1.5 rounded-lg transition-all">
-                        <span className="text-xs font-bold text-slate-700">{e.nombre}</span>
-                        <button onClick={() => handleDeleteEmpresa(e.id)} className="text-slate-400 hover:text-red-600 p-0.5 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
-                      </div>
+                      <div key={e.id} className="group flex items-center gap-1.5 bg-slate-100 border px-3 py-1.5 rounded-lg transition-all"><span className="text-xs font-bold text-slate-700">{e.nombre}</span><button onClick={() => handleDeleteEmpresa(e.id)} className="text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3 h-3" /></button></div>
                     ))}
                   </div>
                 </div>
@@ -506,6 +491,7 @@ export default function Admin() {
         )}
       </main>
 
+      {/* MODAL DE RECHAZO */}
       {rechazoId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
@@ -513,7 +499,7 @@ export default function Admin() {
             <textarea className="w-full border border-slate-300 rounded-lg p-3 text-sm min-h-[120px] mb-4 focus:ring-2 focus:ring-red-500 outline-none" placeholder="Escribe el motivo..." value={comentario} onChange={e => setComentario(e.target.value)} />
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => { setRechazoId(null); setComentario(''); }} className="font-bold">Cancelar</Button>
-              <Button onClick={handleRechazar} className="bg-red-600 hover:bg-red-700 text-white font-bold" disabled={!comentario.trim()}>Rechazar Evento</Button>
+              <Button onClick={handleRechazar} className="bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-200" disabled={!comentario.trim()}>Rechazar Evento</Button>
             </div>
           </div>
         </div>
