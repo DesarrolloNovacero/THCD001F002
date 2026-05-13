@@ -306,7 +306,22 @@ export default function Admin() {
   const datosLocalidad = [...fusionarYLimpiarDatos(dashboardData?.graficos?.localidad)].sort((a,b) => b.value - a.value);
 
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const selectMonth = (m: number) => { setPeriodoSeleccionado(`${currentDate.getFullYear()}-${String(m+1).padStart(2,'0')}`); setOpenCalendar(false); };
+  
+  const selectMonth = (m: number) => { 
+    setPeriodoSeleccionado(`${currentDate.getFullYear()}-${String(m+1).padStart(2,'0')}`); 
+    setOpenCalendar(false); 
+  };
+
+  const selectYear = (y: number) => {
+    setPeriodoSeleccionado(String(y));
+    setOpenCalendar(false);
+  };
+
+  const changeYear = (dir: number) => {
+    const d = new Date(currentDate);
+    d.setFullYear(d.getFullYear() + dir);
+    setCurrentDate(d);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
@@ -330,8 +345,32 @@ export default function Admin() {
                   <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-md px-4 h-9 shadow-sm"><Calendar className="w-4 h-4 text-slate-500" /><span className="text-sm font-bold text-[#004D7C]">{periodoSeleccionado}</span></div>
                   {openCalendar && (
                     <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl p-4 z-50 w-64">
-                       <div className="flex justify-between mb-2 font-bold text-xs px-1"><span>{currentDate.getFullYear()}</span><div className="flex gap-2"><ChevronLeft className="w-4 h-4" onClick={(e) => {e.stopPropagation(); setCurrentDate(new Date(currentDate.getFullYear()-1, 0))}}/><ChevronRight className="w-4 h-4" onClick={(e) => {e.stopPropagation(); setCurrentDate(new Date(currentDate.getFullYear()+1, 0))}}/></div></div>
-                       <div className="grid grid-cols-4 gap-2">{months.map((m, i) => <button key={i} onClick={() => selectMonth(i)} className="text-[10px] p-2 rounded hover:bg-[#004D7C] hover:text-white font-bold">{m}</button>)}</div>
+                       <div className="flex justify-between items-center mb-3">
+                         <span className="font-bold text-sm text-[#004D7C]">
+                           {vistaDashboard === 'MENSUAL' ? currentDate.getFullYear() : 'Seleccionar Año'}
+                         </span>
+                         <div className="flex gap-2">
+                           <button onClick={(e) => { e.stopPropagation(); changeYear(-1); }} className="p-1 hover:bg-slate-100 rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                           <button onClick={(e) => { e.stopPropagation(); changeYear(1); }} className="p-1 hover:bg-slate-100 rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                         </div>
+                       </div>
+                       
+                       {vistaDashboard === 'MENSUAL' ? (
+                         <div className="grid grid-cols-4 gap-2">
+                           {months.map((m, i) => <button key={i} onClick={() => selectMonth(i)} className="text-[10px] p-2 rounded hover:bg-[#004D7C] hover:text-white font-bold transition-colors">{m}</button>)}
+                         </div>
+                       ) : (
+                         <div className="grid grid-cols-3 gap-2">
+                           {Array.from({ length: 9 }).map((_, i) => {
+                             const year = currentDate.getFullYear() - 4 + i;
+                             return (
+                               <button key={year} onClick={() => selectYear(year)} className="text-[10px] p-2 rounded hover:bg-[#004D7C] hover:text-white font-bold transition-colors">
+                                 {year}
+                               </button>
+                             );
+                           })}
+                         </div>
+                       )}
                     </div>
                   )}
                 </div>
@@ -349,7 +388,7 @@ export default function Admin() {
                   <KpiCard title="Horas Totales" value={dashboardData.kpis.total_horas} trend={dashboardData.tendencias.diferencia_horas} isTrendPercent={false} />
                   <KpiCard title="Horas Promedio" value={dashboardData.kpis.horas_promedio} />
                   <KpiCard title="Cursos Realizados" value={dashboardData.kpis.total_cursos} />
-                  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-full relative">
+                  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-full relative overflow-hidden">
                     <p className="text-[11px] font-bold text-slate-500 absolute top-5 left-5 uppercase tracking-wider">Personal Capacitado</p>
                     <div className="w-full h-28 relative mt-6">
                        <ResponsiveContainer width="100%" height="100%">
@@ -368,7 +407,7 @@ export default function Admin() {
                            </Pie>
                          </PieChart>
                        </ResponsiveContainer>
-                       <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-3xl font-black text-[#004D7C]">{dashboardData.kpis.personal_capacitado_pct.toFixed(1)}%</p>
+                       <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-3xl font-black text-[#004D7C] leading-none">{dashboardData.kpis.personal_capacitado_pct.toFixed(1)}%</p>
                     </div>
                     {dashboardData.tendencias.diferencia_pct !== undefined && (
                       <div className="flex items-center gap-1 mt-2">
