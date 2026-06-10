@@ -74,6 +74,14 @@ export default function Login() {
           <Button type="submit" className="w-full mt-6" disabled={isLoading}>
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Lock className="w-4 h-4 mr-2"/> Iniciar Sesión</>}
           </Button>
+          <div className="text-right mt-2">
+          <a
+            href="/forgot-password"
+            className="text-sm text-primary hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
         </form>
       </div>
     </div>
