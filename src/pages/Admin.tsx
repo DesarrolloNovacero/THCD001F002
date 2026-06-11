@@ -497,10 +497,7 @@ export default function Admin() {
             <th className="py-4 px-4">Creador por</th>
             <th className="py-4 px-4">Fecha</th>
             <th className="py-4 px-4">Estado</th>
-
-            {/* ✅ NUEVA COLUMNA */}
             <th className="py-4 px-4">Comentario</th>
-
             <th className="py-4 px-4 text-right">Acciones</th>
           </tr>
         </thead>
