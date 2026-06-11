@@ -15,7 +15,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, LabelList 
 } from 'recharts';
 
-interface EventoAdmin { id: string; codigo: string; nombre: string; estado: string; creador: string; fecha: string; }
+interface EventoAdmin { id: string; codigo: string; nombre: string; estado: string; comentario: string;creador: string; fecha: string; }
 interface CatalogoItem { id: string; nombre: string; }
 
 const BLUE_MAIN = '#004D7C';
