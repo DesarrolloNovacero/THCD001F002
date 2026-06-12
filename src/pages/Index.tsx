@@ -157,22 +157,26 @@ export default function Index() {
   };
 
   const handleFileUpload = async (file: File) => {
-      if(!mesCorte) return toast({ title: 'Falta el Mes de Corte', description: 'Selecciona un mes para crear el Snapshot de métricas antes de subir el archivo.', variant: 'destructive' });
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('source', 'maestro');
-      formData.append('mes_corte', mesCorte);
-      try {
-          const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-          if (!res.ok) throw new Error();
-          const dbRes = await fetch(`${API_URL}/check-db-status`, { headers: { 'Authorization': `Bearer ${token}` } });
-          const dbData = await dbRes.json();
-          setDbReady(dbData.ready);
-          setDbCount(dbData.count);
-          toast({ title: 'Archivo procesado', description: `Base de datos unificada y métricas de ${mesCorte} guardadas.` });
-      } catch (e) { toast({ title: 'Error al procesar', description: 'Verifique el formato del archivo.', variant: 'destructive' }); } finally { setIsUploading(false); }
-  };
+    if (!mesCorte) return toast({ title: 'Falta el Mes de Corte', description: 'Selecciona un mes para crear el Snapshot de métricas antes de subir el archivo.', variant: 'destructive' });
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mes_corte', mesCorte);
+    try {
+        const res = await fetch(`${API_URL}/upload-masters`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Error desconocido');
+        }
+        const dbRes = await fetch(`${API_URL}/check-db-status`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const dbData = await dbRes.json();
+        setDbReady(dbData.ready);
+        setDbCount(dbData.count);
+        toast({ title: 'Archivo procesado', description: `Base de datos unificada y métricas de ${mesCorte} guardadas.` });
+    } catch (e: any) {
+        toast({ title: 'Error al procesar', description: e.message, variant: 'destructive' });
+    } finally { setIsUploading(false); }
+};
 
   const handleNewCourse = () => {
     setIsLoading(false);
