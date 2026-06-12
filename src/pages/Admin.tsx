@@ -15,16 +15,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, LabelList 
 } from 'recharts';
 
-interface EventoAdmin {
-  id: string;
-  codigo: string;
-  nombre: string;
-  estado: string;
-  creador: string;
-  fecha: string;
-  comentario?: string; 
-}
-
+interface EventoAdmin { id: string; codigo: string; nombre: string; estado: string; creador: string; fecha: string; }
 interface CatalogoItem { id: string; nombre: string; }
 
 const BLUE_MAIN = '#004D7C';
@@ -482,30 +473,7 @@ export default function Admin() {
                       <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
                       <td className="py-3 px-4 text-slate-600">{e.creador}</td>
                       <td className="py-3 px-4 text-slate-500">{new Date(e.fecha).toLocaleDateString()}</td>
-                      <td className="py-3 px-4">
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${
-                              e.estado === 'APROBADO'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : e.estado === 'RECHAZADO'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {e.estado}
-                          </span>
-
-                          {e.estado === "RECHAZADO" && e.comentario && (
-                            <span className="text-xs text-red-600 mt-1 italic">
-                              {e.comentario}
-                            </span>
-                          )}
-
-                        </div>
-                      </td>          
+                      <td className="py-3 px-4"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${e.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-800' : e.estado === 'RECHAZADO' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{e.estado}</span></td>
                       <td className="py-3 px-4 text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleExportarAuditoria(e.id, e.codigo)} className="h-8 w-8 p-0"><Download className="w-4 h-4" /></Button>
                         {e.estado === 'APROBADO' && <Button variant="outline" size="sm" onClick={() => handleRevertir(e.id)} className="text-amber-600 border-amber-200 h-8 w-8 p-0"><Undo2 className="w-4 h-4"/></Button>}
