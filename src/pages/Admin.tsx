@@ -15,7 +15,16 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, LabelList 
 } from 'recharts';
 
-interface EventoAdmin { id: string; codigo: string; nombre: string; estado: string; creador: string; fecha: string; }
+interface EventoAdmin {
+  id: string;
+  codigo: string;
+  nombre: string;
+  estado: string;
+  creador: string;
+  fecha: string;
+  comentario?: string; 
+}
+
 interface CatalogoItem { id: string; nombre: string; }
 
 const BLUE_MAIN = '#004D7C';
@@ -449,159 +458,66 @@ export default function Admin() {
             )}
           </>
         )}
-        
-{activeTab === 'auditoria' && (
-  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
 
-    {/* HEADER */}
-    <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <h2 className="text-lg font-bold text-[#004D7C] uppercase tracking-wide flex items-center gap-2">
-        <ClipboardCheck className="w-5 h-5" /> Auditorías Operativas
-      </h2>
+        {activeTab === 'auditoria' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h2 className="text-lg font-bold text-[#004D7C] uppercase tracking-wide flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> Auditoría Operativa</h2>
+              <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-2 px-2 border-r border-slate-200 mr-1"><ListFilter className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Estado:</span></div>
+                <div className="flex gap-1">
+                  {['TODOS', 'PENDIENTE', 'APROBADO', 'RECHAZADO'].map(estado => <button key={estado} onClick={() => setFiltroEstadoAuditoria(estado)} className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filtroEstadoAuditoria === estado ? 'bg-[#004D7C] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}>{estado}</button>)}
+                </div>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                  <tr><th className="py-4 px-4">Código</th><th className="py-4 px-4">Curso</th><th className="py-4 px-4">Creador por</th><th className="py-4 px-4">Fecha</th><th className="py-4 px-4">Estado</th><th className="py-4 px-4 text-right">Acciones</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {eventosFiltrados.map(e => (
+                    <tr key={e.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-slate-500">{e.codigo}</td>
+                      <td className="py-3 px-4 font-bold text-slate-800">{e.nombre}</td>
+                      <td className="py-3 px-4 text-slate-600">{e.creador}</td>
+                      <td className="py-3 px-4 text-slate-500">{new Date(e.fecha).toLocaleDateString()}</td>
+                      <td className="py-3 px-4">
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
 
-      <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-        <div className="flex items-center gap-2 px-2 border-r border-slate-200 mr-1">
-          <ListFilter className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-            Estado:
-          </span>
-        </div>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${
+                              e.estado === 'APROBADO'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : e.estado === 'RECHAZADO'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {e.estado}
+                          </span>
 
-        <div className="flex gap-1">
-          {['TODOS', 'PENDIENTE', 'APROBADO', 'RECHAZADO'].map(estado => (
-            <button
-              key={estado}
-              onClick={() => setFiltroEstadoAuditoria(estado)}
-              className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
-                filtroEstadoAuditoria === estado
-                  ? 'bg-[#004D7C] text-white shadow-sm'
-                  : 'text-slate-500 hover:bg-slate-200'
-              }`}
-            >
-              {estado}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+                          {e.estado === "RECHAZADO" && e.comentario && (
+                            <span className="text-xs text-red-600 mt-1 italic">
+                              {e.comentario}
+                            </span>
+                          )}
 
-    {/* TABLA */}
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm text-left">
-
-        {/* HEADER TABLA */}
-        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
-          <tr>
-            <th className="py-4 px-4">Código</th>
-            <th className="py-4 px-4">Curso</th>
-            <th className="py-4 px-4">Creador por</th>
-            <th className="py-4 px-4">Fecha</th>
-            <th className="py-4 px-4">Estado</th>
-            <th className="py-4 px-4">Comentario</th>
-            <th className="py-4 px-4 text-right">Acciones</th>
-          </tr>
-        </thead>
-
-        {/* BODY */}
-        <tbody className="divide-y divide-slate-100">
-          {eventosFiltrados.map(e => (
-            <tr key={e.id} className="hover:bg-slate-50 transition-colors">
-
-              <td className="py-3 px-4 font-mono text-slate-500">
-                {e.codigo}
-              </td>
-
-              <td className="py-3 px-4 font-bold text-slate-800">
-                {e.nombre}
-              </td>
-
-              <td className="py-3 px-4 text-slate-600">
-                {e.creador}
-              </td>
-
-              <td className="py-3 px-4 text-slate-500">
-                {new Date(e.fecha).toLocaleDateString()}
-              </td>
-
-              {/* ESTADO */}
-              <td className="py-3 px-4">
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold ${
-                    e.estado === 'APROBADO'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : e.estado === 'RECHAZADO'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {e.estado}
-                </span>
-              </td>
-              {/* NUEVO: COMENTARIO */}
-              <td className="py-3 px-4 text-xs text-slate-600 max-w-[250px]">
-                {e.estado === 'RECHAZADO' && e.comentario ? (
-                  <span className="text-red-600 italic">
-                    {e.comentario}
-                  </span>
-                ) : (
-                  <span className="text-slate-400">—</span>
-                )}
-              </td>
-
-              {/* ACCIONES */}
-              <td className="py-3 px-4 text-right space-x-2">
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExportarAuditoria(e.id, e.codigo)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-
-                {e.estado === 'APROBADO' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRevertir(e.id)}
-                    className="text-amber-600 border-amber-200 h-8 w-8 p-0"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                  </Button>
-                )}
-
-                {e.estado === 'PENDIENTE' && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAprobar(e.id)}
-                      className="text-emerald-600 border-emerald-200 h-8 w-8 p-0"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setRechazoId(e.id)}
-                      className="text-red-600 border-red-200 h-8 w-8 p-0"
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-
-              </td>
-
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+                        </div>
+                      </td>          
+                      <td className="py-3 px-4 text-right space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleExportarAuditoria(e.id, e.codigo)} className="h-8 w-8 p-0"><Download className="w-4 h-4" /></Button>
+                        {e.estado === 'APROBADO' && <Button variant="outline" size="sm" onClick={() => handleRevertir(e.id)} className="text-amber-600 border-amber-200 h-8 w-8 p-0"><Undo2 className="w-4 h-4"/></Button>}
+                        {e.estado === 'PENDIENTE' && (<><Button variant="outline" size="sm" onClick={() => handleAprobar(e.id)} className="text-emerald-600 border-emerald-200 h-8 w-8 p-0"><CheckCircle className="w-4 h-4"/></Button><Button variant="outline" size="sm" onClick={() => setRechazoId(e.id)} className="text-red-600 border-red-200 h-8 w-8 p-0"><XCircle className="w-4 h-4"/></Button></>)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {activeTab === 'catalogos' && (
           <div className="space-y-6">
