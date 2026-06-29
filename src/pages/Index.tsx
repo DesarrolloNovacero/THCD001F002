@@ -289,6 +289,9 @@ export default function Index() {
 
 
         const resData = await response.json();
+        
+        console.log("RESPUESTA BACKEND:", resData);   // 🔥 ESTE
+        console.log("CODIGO:", resData.codigo);
 
 setDrafts(prev => {
     const existe = prev.some(d => d.id === selectedDraftId);
@@ -297,7 +300,7 @@ setDrafts(prev => {
         // Caso normal: ya estaba pre-guardado, solo actualizamos
         return prev.map(d => 
             (d.id === selectedDraftId) 
-                ? { ...d, eventoId: resData.evento_id, estado: 'PENDIENTE', comentario: '' } 
+                ? { ...d, eventoId: resData.evento_id,codigo: resData.codigo, estado: 'PENDIENTE', comentario: '' } 
                 : d
         );
     }
@@ -312,6 +315,7 @@ setDrafts(prev => {
         bulkRows: [...bulkRows],
         estado: 'PENDIENTE',
         eventoId: resData.evento_id,
+        codigo: resData.codigo,
         comentario: ''
     };
     return [...prev, nuevoDraft];
