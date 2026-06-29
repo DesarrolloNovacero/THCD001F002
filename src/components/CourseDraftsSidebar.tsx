@@ -20,6 +20,7 @@ export interface CourseDraft {
   validationStatus?: string;
   eventoId?: string;
   estado?: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'BORRADOR';
+  codigo?: string;
   comentario?: string;
 }
 
@@ -95,11 +96,22 @@ export function CourseDraftsSidebar({
                     {draft.estado === 'APROBADO' && <span className="flex items-center text-emerald-600 font-bold text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200"><CheckCircle2 className="w-3 h-3 mr-1"/>Aprobado</span>}
                     {draft.estado === 'RECHAZADO' && <span className="flex items-center text-red-600 font-bold text-[10px] bg-red-100 px-1.5 py-0.5 rounded border border-red-200"><AlertCircle className="w-3 h-3 mr-1"/>Rechazado</span>}
                   </div>
-
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+  
+                  <div className="flex items-center gap-2">
                     <Users className="w-3 h-3" />
-                    <span className="font-medium">{draft.participantes} participante{draft.participantes !== 1 ? 's' : ''}</span>
+                    <span className="font-medium">
+                      {draft.participantes} participante{draft.participantes !== 1 ? 's' : ''}
+                    </span>
                   </div>
+
+                  {draft.codigo && (
+                    <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-semibold">
+                      {draft.codigo}
+                    </span>
+                  )}
+
+                </div>
+                  
                   <p className="text-[10px] text-slate-400 mt-1">
                     {format(new Date(draft.fechaCreacion), "dd MMM, HH:mm", { locale: es })}
                   </p>
