@@ -287,17 +287,39 @@ export default function Index() {
             throw new Error(errorData.detail || 'Fallo en la comunicación con el servidor');
         }
 
+
         const resData = await response.json();
-        
-        // Actualizamos el draft local con el nuevo estado y el eventoId devuelto por el servidor
-        setDrafts(prev => prev.map(d => 
+
+setDrafts(prev => {
+    const existe = prev.some(d => d.id === selectedDraftId);
+    
+    if (existe) {
+        // Caso normal: ya estaba pre-guardado, solo actualizamos
+        return prev.map(d => 
             (d.id === selectedDraftId) 
                 ? { ...d, eventoId: resData.evento_id, estado: 'PENDIENTE', comentario: '' } 
                 : d
-        ));
+        );
+    }
+    // Caso nuevo: se envió directo sin pre-guardar, creamos el draft para que aparezca en la lista
+    const nuevoDraft: CourseDraft = {
+        id: selectedDraftId || crypto.randomUUID(),
+        nombreCurso: eventData.nombreCurso,
+        fechaCreacion: new Date(),
+        participantes: allRegistros.length,
+        eventData: { ...eventData },
+        entryMode: 'bulk',
+        bulkRows: [...bulkRows],
+        estado: 'PENDIENTE',
+        eventoId: resData.evento_id,
+        comentario: ''
+    };
+    return [...prev, nuevoDraft];
+});
 
-        toast({ title: '¡Enviado a Revisión!', description: 'El administrador auditará los datos pronto.' });
-        handleNewCourse(); // Limpiamos el formulario para el siguiente curso
+toast({ title: '¡Enviado a Revisión!', description: 'El administrador auditará los datos pronto.' });
+handleNewCourse();
+        
       } catch (error: any) { 
           toast({ title: 'Error', description: error.message, variant: 'destructive' }); 
       } finally { 
