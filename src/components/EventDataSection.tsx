@@ -27,12 +27,13 @@ const DIMENSIONES = [
   'Seguridad y Salud Ocupacional', 
   'Calidad', 
   'Ambiente', 
-  'Energia', 
-  'Estrategica', 
-  'Tecnica', 
+  'Energia',   
   'Desarrollo', 
   'Liderazgo', 
-  'Otros'
+  'Otros',
+  'Energia',
+  'Tecnica',
+  'Estrategica',
 ];
 
 const TIPOS_EVENTO = [
